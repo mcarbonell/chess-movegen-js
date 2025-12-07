@@ -582,3 +582,29 @@ Este proyecto es **excelente material de estudio** y una base sólida para:
 ---
 
 > **Nota Final**: Este es un proyecto de muy alta calidad técnica. La generación de movimientos legales directa con análisis táctico integrado es una característica diferenciadora que merece ser documentada y compartida con la comunidad de programación de ajedrez. ¡Excelente trabajo! 🏆
+
+---
+
+## 🛠️ Actualizaciones 2025 - Depuración Bitboard.js
+
+Se ha realizado un trabajo intensivo de depuración y mejora en `bitboard.js` para asegurar su compatibilidad con Node.js y la corrección de su lógica de generación de movimientos.
+
+### Logros Principales:
+
+1. **Compatibilidad Node.js**:
+   - Se ha habilitado la carga de tablas mágicas (`magic-tables.js`) mediante `require` en entorno Node.js.
+   - Se han resuelto errores de referencia a variables globales (`filea`, `rank8`, etc.) que impedían la ejecución fuera del navegador.
+
+2. **Corrección de Errores Críticos**:
+   - **Enroques**: Se corrigió un bug grave en `generate_kingmoves` donde la verificación de derechos de enroque estaba comentada, permitiendo enroques ilegales.
+   - **Referencias**: Se corrigieron typos en `makemove` (`c1` -> `_c1`), `undomove` (`f1` -> `_f1`), y referencias a `this` faltantes (`totalocc`, `side`).
+
+3. **Validación Perft**:
+   - El generador bitboard ahora pasa exitosamente tests de Perft hasta profundidad 4 en múltiples posiciones críticas, incluyendo 'Kiwipete' y posiciones con promociones complejas.
+   - Rendimiento: ~2.4 Millones de Nodos/segundo (Depth 4) en entorno Node.js.
+
+### Archivos Relacionados:
+- `js/bitboard.js`: Código fuente corregido.
+- `js/magic-tables.js`: Tablas mágicas externalizadas y exportables.
+- `tests/bitboard-node.js`: Wrapper para pruebas en Node.js.
+- `tests/perft-test.js`: Suite de pruebas Perft.

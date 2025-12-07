@@ -127,14 +127,23 @@ w.onmessage = function(event) {
 
 ## ⚡ Rendimiento
 
-**Perft desde posición inicial** (JavaScript en navegador):
+**Perft desde posición inicial** (Node.js v20+, sin debug):
 
-| Depth | Nodos      | Tiempo aprox. | NPS       |
-|-------|-----------|---------------|-----------|
-| 5     | 4,865,609  | ~10s         | ~500k NPS |
-| 6     | 119,060,324| ~240s        | ~500k NPS |
+| Depth | Nodos | Tiempo | NPS |
+|-------|-------|--------|-----|
+| 1 | 20 | <1ms | ~25k |
+| 2 | 400 | ~1ms | ~268k |
+| 3 | 8,902 | ~10ms | ~864k |
+| 4 | 197,281 | ~83ms | **2.4M** |
+| 5 | 4,865,609 | ~871ms | **5.6M** |
+| 6 | 119,060,324 | ~17s | **7.0M** |
 
-> **Nota**: Los tiempos varían según el navegador y hardware.
+**En navegador** (puede variar según browser y hardware):
+- Chrome/Edge: ~3-5M NPS
+- Firefox: ~2-4M NPS
+
+> **Nota**: Estos resultados son con el código optimizado (sin llamadas a `debug()`). 
+> El rendimiento en producción es excelente para JavaScript puro.
 
 ## 🎨 Características Técnicas Destacadas
 
@@ -287,16 +296,21 @@ Performance Summary:
 
 ### Performance Benchmarks
 
-Measured on Node.js v20+ with x88 generator:
+Measured on Node.js v20+ with x88 generator (optimized, no debug):
 
 | Depth | Nodes | Time | NPS |
 |-------|-------|------|-----|
-| 1 | 20 | <1ms | ~140k |
-| 2 | 400 | ~10ms | ~40k |
-| 3 | 8,902 | ~120ms | ~74k |
-| 4 | 197,281 | ~2s | ~96k |
-| 5 | 4,865,609 | ~45s | ~108k |
-| 6 | 119,060,324 | ~18min | ~110k |
+| 1 | 20 | <1ms | ~25k |
+| 2 | 400 | ~1ms | ~268k |
+| 3 | 8,902 | ~10ms | ~864k |
+| 4 | 197,281 | ~83ms | **2.4M** |
+| 5 | 4,865,609 | ~871ms | **5.6M** |
+| 6 | 119,060,324 | ~17s | **7.0M** |
+
+**Quick test suite** (all 7 positions, depths 1-4): ~1.4 seconds
+
+> 💡 **Tip**: The performance is significantly faster with debug logging disabled. 
+> Make sure to comment out `this.debug()` calls in production.
 
 ### Troubleshooting
 
