@@ -37,3 +37,6 @@ coverage/
 *.tmp
 *.temp
 .cache/
+
+# Amazon Q files
+.amazonq/

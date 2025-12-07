@@ -5,6 +5,8 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES6+-yellow.svg)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+[![CI](https://github.com/mcarbonell/chess-movegen-js/actions/workflows/ci.yml/badge.svg)](https://github.com/mcarbonell/chess-movegen-js/actions)
+
 **English** | [Español](README.es.md)
 
 ## 🎯 Key Features
@@ -342,6 +344,25 @@ board.loadFEN('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1');
 - [x] **Automated tests with Perft suite** ✅
 - [ ] WebAssembly optimization
 - [ ] Publish as NPM package
+
+## ⚙️ Continuous Integration (GitHub Actions)
+
+- **Badge:** agregado arriba en este `README`.
+- **Qué ejecuta:** el workflow `CI` corre los tests rápidos (`npm test`) automáticamente en `push` y `pull_request`. El job de tests completos de bitboard (`npm run test:bb`) está configurado como ejecución manual para evitar ejecuciones largas en cada push.
+
+Cómo lanzar el test completo desde GitHub UI:
+
+1. Ve a la pestaña **Actions** del repositorio.
+2. Selecciona el workflow `CI`.
+3. Pulsa **Run workflow**, elige la rama (`main` o `master`) y ejecuta.
+
+Usando la CLI `gh` (GitHub CLI) puedes lanzar el workflow así:
+
+```bash
+gh workflow run ci.yml --ref main
+```
+
+Nota: el workflow `CI` incluye matrix de versiones Node para los tests rápidos y reserva un job manual (`test-bitboard-full`) con mayor `timeout` para las pruebas intensivas.
 
 ## 🤝 Contributing
 
