@@ -2,42 +2,18 @@
 
 console.clear()
 
+// Load board implementation first (contains all const definitions)
+importScripts('module.js', 'x88.js')
+// importScripts('module.js', 'bitboard.js')  // Alternative: use bitboard instead
 
-const white = 0;
-const black = 1;
-
-const empty = 0; // empty
-
-const p = 1;
-const n = 2;
-const b = 3;
-const r = 4;
-const q = 5;
-const k = 6;
-
-const wp = 1;
-const wn = 2;
-const wb = 3;
-const wr = 4;
-const wq = 5;
-const wk = 6;
-
-const bp = wp + 8;
-const bn = wn + 8;
-const bb = wb + 8;
-const br = wr + 8;
-const bq = wq + 8;
-const bk = wk + 8;
-
-
-importScripts('module.js', 'bitboard.js', 'x88.js')
-
+// All constants, functions, and classes are now defined in x88.js
 
 console.log(hello())
 
-// const MAXPLY = 1024
-const MAXPLY = 100
+// Engine-specific constants
+const startpos = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
 
+// Utility functions for engine
 function isNumeric(num) {
     return !isNaN(num)
 }
@@ -45,86 +21,6 @@ function isNumeric(num) {
 function numberWithCommas(x) {
     return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
 }
-
-function is_digit(c) {
-    return '0123456789'.indexOf(c) !== -1;
-}
-
-
-function fileFromChar(char) {
-    return char.charCodeAt(0) - 'a'.charCodeAt(0)
-}
-
-function rankFromChar(char) {
-    return char.charCodeAt(0) - '1'.charCodeAt(0)
-}
-
-function fileToChar(file) {
-    return String.fromCharCode('a'.charCodeAt(0) + file)
-}
-
-function rankToChar(rank) {
-    return String.fromCharCode('1'.charCodeAt(0) + rank)
-}
-
-console.assert(squareToStr(e5) == 'e5', 'squareToStr')
-console.assert(squareFromStr('b5') == b5, 'squareFromStr')
-
-console.assert(file(b5) === fileb, 'file(b5) == fileb', file(b5), fileb)
-console.assert(rank(b5) === rank5, 'rank(b5) == rank5', rank(b5), rank5)
-console.assert(b5 === square(file(b5), rank(b5)), ' b5 == square(file(b5), rank(b5) ')
-console.assert(b5 === square(fileb, rank5), ' b5 == square(file(b5), rank(b5) ')
-console.assert(e4 === square(filee, rank4), ' e4 == square(filee, rank4 ')
-
-function pcolor(piece) {
-    return (piece === 0)? -1 : (piece & 8) >>> 3
-}
-
-function ptype(piece) {
-    return (piece & 7) >>> 0
-}
-
-function makepiece(pcolor, ptype) {
-    return (pcolor << 3) + ptype
-}
-
-function pieceChar(piece) {
-    return charpieces[piece] 
-}
-
-function opposite(turn) {
-    return 1 - turn
-}
-
-const pieces = '.♟♚♞♝♜♛  ♙♔♘♗♖♕';
-const diagpieces = [' ', '♟', '♞', '♝', '♜', '♛', '♚', '', '', '♙', '♘', '♗', 'r', '♖', '♔', '' ]
-const charpieces = [' ', 'P', 'N', 'B', 'R', 'Q', 'K', '', '', 'p', 'n', 'b', 'r', 'q', 'k', '' ]
-
-const startpos = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-const test1    = '7k/pp4np/2p3p1/3pN1q1/3P4/Q7/1r3rPP/2R2RK1 w - e4 0 1';
-
-
-const whitecancastleK = 1;
-const whitecancastleQ = 2;
-const blackcancastleK = 4;
-const blackcancastleQ = 8;
-
-const mask_capture       = 1
-const mask_promotion     = 1 << 1
-const mask_pawnmove      = 1 << 2
-const mask_pawn2         = 1 << 15
-const mask_ep            = 1 << 3
-const mask_castling      = 1 << 4
-const mask_check         = 1 << 5
-const mask_doublecheck   = 1 << 6
-const mask_discovercheck = 1 << 7
-const mask_safe          = 1 << 8
-const mask_protected     = 1 << 9
-const mask_insecure      = 1 << 10
-const mask_hanging       = 1 << 11
-const mask_goodcapture   = 1 << 12
-const mask_freecapture   = 1 << 13
-const mask_winningcapture = 1 << 14
 
 class Move {
     from                // 6 bits  
