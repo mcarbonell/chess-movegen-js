@@ -25,6 +25,12 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
+      - name: Ensure npm cache dirs exist
+        run: |
+          mkdir -p ~/.npm
+          mkdir -p ~/.cache
+          echo "Created npm cache dirs"
+
       - name: Install dependencies
         run: npm ci
 
