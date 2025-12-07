@@ -14,6 +14,15 @@
 
 const perftPositions = require('./perft-positions.js');
 
+// Ensure `performance` is available in Node.js (GitHub Actions runners)
+if (typeof performance === 'undefined') {
+    try {
+        global.performance = require('perf_hooks').performance;
+    } catch (e) {
+        // If perf_hooks is unavailable, tests will report missing performance timing.
+    }
+}
+
 // Parse command line arguments
 const args = process.argv.slice(2);
 const options = {
