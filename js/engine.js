@@ -220,8 +220,7 @@ class UCIChessEngine {
 
     perft(depth) {
         this.board.setdebug(false)
-        // return this.board.perft(depth)
-        return this.board.divide(depth)
+        return this.board.perft(depth)
     }
 
     undo() {
