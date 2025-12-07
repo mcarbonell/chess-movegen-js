@@ -1,0 +1,48 @@
+{
+  "name": "chess-movegen-js",
+  "version": "1.0.0",
+  "description": "JavaScript chess move generator with strictly legal moves. Integrated check/checkmate/stalemate detection. Two implementations: x88 & Bitboards.",
+  "main": "js/x88.js",
+  "scripts": {
+    "test": "node tests/perft-test.js --quick",
+    "test:full": "node tests/perft-test.js",
+    "test:x88": "node tests/perft-test.js --generator x88",
+    "test:bb": "node tests/perft-test.js --generator bb"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mcarbonell/chess-movegen-js.git"
+  },
+  "keywords": [
+    "chess",
+    "chess-engine",
+    "move-generation",
+    "javascript",
+    "x88",
+    "bitboards",
+    "uci",
+    "perft",
+    "chess-programming",
+    "game-development",
+    "legal-moves",
+    "tactical-analysis"
+  ],
+  "author": "Mario Raúl Carbonell Martínez",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mcarbonell/chess-movegen-js/issues"
+  },
+  "homepage": "https://github.com/mcarbonell/chess-movegen-js#readme",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "js/x88.js",
+    "js/bitboard.js",
+    "js/engine.js",
+    "js/magic-tables.js",
+    "README.md",
+    "README.es.md",
+    "LICENSE"
+  ]
+}
