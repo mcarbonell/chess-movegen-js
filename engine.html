@@ -40,9 +40,10 @@
             <!-- Description Banner -->
             <div class="alert alert-primary" role="alert">
                 <h5 class="alert-heading">🎯 Interactive Chess Move Generator Demo</h5>
-                <p class="mb-0">This demo showcases a <strong>strictly legal move generator</strong> with integrated check/checkmate detection. 
-                Test performance with <strong>Perft</strong>, load famous positions, or play moves on the board. 
-                Performance: <strong>~5.6M nodes/sec</strong> at depth 5.</p>
+                <p class="mb-0">This demo showcases a <strong>strictly legal move generator</strong> with integrated
+                    check/checkmate detection.
+                    Test performance with <strong>Perft</strong>, load famous positions, or play moves on the board.
+                    Performance: <strong>~5.6M nodes/sec</strong> at depth 5.</p>
             </div>
 
             <div class="container px-1 text-center">
@@ -105,9 +106,12 @@
                 <div class="mt-3">
                     <h6>Quick Actions:</h6>
                     <div class="btn-group mb-2" role="group">
-                        <button class="btn btn-sm btn-outline-primary" onclick="engineCommand('perft 4')">Perft 4</button>
-                        <button class="btn btn-sm btn-outline-primary" onclick="engineCommand('perft 5')">Perft 5</button>
-                        <button class="btn btn-sm btn-outline-primary" onclick="engineCommand('perft 6')">Perft 6</button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="engineCommand('perft 4')">Perft
+                            4</button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="engineCommand('perft 5')">Perft
+                            5</button>
+                        <button class="btn btn-sm btn-outline-primary" onclick="engineCommand('perft 6')">Perft
+                            6</button>
                     </div>
                 </div>
 
@@ -116,11 +120,14 @@
                     <label for="testPositions" class="form-label">Test Positions:</label>
                     <select class="form-select form-select-sm" id="testPositions">
                         <option value="">-- Select a position --</option>
-                        <option value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Initial Position</option>
-                        <option value="r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1">Kiwipete (Complex)</option>
+                        <option value="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1">Initial Position
+                        </option>
+                        <option value="r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1">Kiwipete
+                            (Complex)</option>
                         <option value="8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1">En Passant Test</option>
-                        <option value="r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1">Promotions</option>
-                        <option value="rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8">Mate in 1</option>
+                        <option value="r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1">Promotions
+                        </option>
+                        <option value="rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8">Position 5</option>
                     </select>
                 </div>
 
@@ -129,7 +136,8 @@
                     <form class="row g-3">
                         <div class="col">
                             <label for="enginecommand" class="form-label">UCI Command:</label>
-                            <input type="text" class="form-control" id="enginecommand" placeholder="e.g., perft 5, fen [FEN], undo">
+                            <input type="text" class="form-control" id="enginecommand"
+                                placeholder="e.g., perft 5, fen [FEN], undo">
                         </div>
                         <div class="col-auto align-self-end">
                             <button type="submit" class="btn btn-primary" id='sendBtn'>Send</button>
@@ -187,7 +195,8 @@
                     <div id="engineDepth"></div>
                     <div id="engineInfo"></div>
                     <div id="engineCurr"></div>
-                    <pre id="output" style="max-height: 400px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 5px;"></pre>
+                    <pre id="output"
+                        style="max-height: 400px; overflow-y: auto; background: #f8f9fa; padding: 10px; border-radius: 5px;"></pre>
                 </div>
             </div>
 
@@ -196,7 +205,8 @@
             <div class="text-center">
                 <p class="mb-1">Created by Mario R. Carbonell &middot; &copy; 2025</p>
                 <p class="mb-0">
-                    <a href="https://github.com/mcarbonell/chess-movegen-js" target="_blank" class="text-decoration-none">
+                    <a href="https://github.com/mcarbonell/chess-movegen-js" target="_blank"
+                        class="text-decoration-none">
                         <i class="fa fa-github"></i> View on GitHub
                     </a>
                 </p>
@@ -689,9 +699,9 @@
 
         // Performance indicator - extract from perft output
         var originalOutput = output;
-        output = function(message) {
+        output = function (message) {
             originalOutput(message);
-            
+
             // Check if it's a perft result with performance stats
             if (message.includes('perft') && message.includes('nps:')) {
                 var match = message.match(/perft (\d+) ([\d,]+) time ([\d,]+) nps:([\d,]+)/);
@@ -700,7 +710,7 @@
                     var nodes = match[2];
                     var time = match[3];
                     var nps = match[4];
-                    
+
                     $("#perfIndicator").show();
                     $("#perfStats").html(
                         `Depth ${depth}: <strong>${nodes}</strong> nodes in ${time}ms ` +
