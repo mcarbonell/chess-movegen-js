@@ -1,6 +1,6 @@
 {
   "name": "chess-movegen-js",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "JavaScript chess move generator with strictly legal moves. x88 board representation. Integrated check/checkmate/stalemate detection. Tactical analysis. 5.6M NPS performance.",
   "main": "js/x88.js",
   "scripts": {
