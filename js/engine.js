@@ -3,12 +3,10 @@
 console.clear()
 
 // Load board implementation first (contains all const definitions)
-importScripts('module.js', 'x88.js')
-// importScripts('module.js', 'bitboard.js')  // Alternative: use bitboard instead
+importScripts('x88.js')
+// importScripts('bitboard.js')  // Alternative: use bitboard instead
 
 // All constants, functions, and classes are now defined in x88.js
-
-console.log(hello())
 
 // Engine-specific constants
 const startpos = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -63,12 +61,12 @@ class Node {
 
 class UCIChessEngine {
 
-    usebb = false    
-    board = (this.usebb)? new BBBoard() : new Board()
+    usebb = false
+    board = (this.usebb) ? new BBBoard() : new Board()
     // board = new BBBoard()
     board = Object.seal(this.board)
 
-    constructor() {        
+    constructor() {
         // output('Engine constructor');
         // output(this.board.board.BYTES_PER_ELEMENT + ' bytes por casilla del tablero');    
     }
@@ -77,14 +75,14 @@ class UCIChessEngine {
         // return board
     }
 
-    init(fen) { 
+    init(fen) {
         this.board.loadFEN(fen)
     }
 
     reset() {
         this.board.reset()
         this.board.loadFEN(startpos)
-        
+
     }
 
     debug(debug) {
@@ -102,12 +100,12 @@ class UCIChessEngine {
     }
 
     move(move) {
-        let from = (this.usebb)? square64FromStr(move[0] + move[1]) : squareFromStr(move[0] + move[1])
-        let to   = (this.usebb)? square64FromStr(move[2] + move[3]) : squareFromStr(move[2] + move[3])
+        let from = (this.usebb) ? square64FromStr(move[0] + move[1]) : squareFromStr(move[0] + move[1])
+        let to = (this.usebb) ? square64FromStr(move[2] + move[3]) : squareFromStr(move[2] + move[3])
         let prom = 0
 
         if (move.length == 5) {
-            prom = charpieces.findIndex(el => (el === move[4]) )
+            prom = charpieces.findIndex(el => (el === move[4]))
             console.assert(prom > 0, 'pieza que promociona no encontrada')
         }
 
@@ -120,7 +118,7 @@ class UCIChessEngine {
     }
 
     undo() {
-        return this.board.undomove()            
+        return this.board.undomove()
     }
 
 }
@@ -131,14 +129,14 @@ var engine = new UCIChessEngine();
 var profile = false
 
 onmessage = function (event) {
-        
+
     var msg = event.data;
     postMessage("» " + msg);
 
     var params = msg.split(' ');
     var command = params.shift();
-    
-    switch(command) {
+
+    switch (command) {
 
         case 'uci':
             postMessage("id name killer 3");
@@ -186,7 +184,7 @@ onmessage = function (event) {
 
             if (position === 'startpos') {
                 engine.reset()
-            } 
+            }
 
             if (position === 'fen') {
                 // 1B1N1b2/8/5kp1/p4n1R/P3K1P1/3r1R2/5P2/8 b - - 6 65 bm Rd4#; dm 1; id matein1.00005;
@@ -197,8 +195,8 @@ onmessage = function (event) {
                 var fenhalfmoves = params.shift()
                 var fennummove = params.shift()
 
-                engine.loadFEN(fenboard + ' ' + fenturn + ' '+ fencRsights + ' '+ 
-                               fenepSquare + ' '+ fenhalfmoves + ' '+ fennummove)
+                engine.loadFEN(fenboard + ' ' + fenturn + ' ' + fencRsights + ' ' +
+                    fenepSquare + ' ' + fenhalfmoves + ' ' + fennummove)
             }
 
             var moves = params.shift();
@@ -266,11 +264,11 @@ onmessage = function (event) {
         case 'stop':
             postMessage('info string ' + command + ' not implemented');
             break;
-        
+
         case 'ponderhit':
             postMessage('info string ' + command + ' not implemented');
             break;
-            
+
         case 'quit':
             postMessage('info string ' + command + ' not implemented');
             break;
@@ -287,9 +285,9 @@ onmessage = function (event) {
             break;
 
         case 'perft':
-            
+
             // go perft 7, stockfish, rapidisimo
-            
+
             var depth = params.shift()
             depth = isNumeric(depth) ? Number(depth) : 1
             postMessage('info string perft ' + depth);
@@ -302,14 +300,14 @@ onmessage = function (event) {
             if (profile) console.profileEnd();
 
             var elapsedtime = (d2 - d).toFixed(2);
-            var nps = Math.round(1000 * (result / elapsedtime) );
+            var nps = Math.round(1000 * (result / elapsedtime));
             // var response = {depth: depth, perft: result, time: elapsedtime, nps: nps}
 
             var resultformatted = numberWithCommas(result)
             var elapsedtimeformatted = numberWithCommas(elapsedtime)
             var npsformatted = numberWithCommas(nps)
 
-            postMessage('info string perft ' + depth + ' ' + resultformatted + ' time '+ elapsedtimeformatted + ' nps:' + npsformatted );
+            postMessage('info string perft ' + depth + ' ' + resultformatted + ' time ' + elapsedtimeformatted + ' nps:' + npsformatted);
 
 
             // postMessage(JSON.stringify(response));
@@ -318,14 +316,11 @@ onmessage = function (event) {
 
         default:
             postMessage('info string ' + command + ' Comando no reconocido');
-            
-      } 
+
+    }
 };
 
 
 
 
 postMessage("Engine initialized");
-
-
-
