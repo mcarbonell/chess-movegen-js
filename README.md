@@ -360,12 +360,12 @@ board.loadFEN('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1');
 
 ## 🎯 Next Steps
 
-- [ ] Implement full alpha-beta search
-- [ ] Add position evaluation
-- [ ] Transposition table with Zobrist hashing
 - [x] **Automated tests with Perft suite** ✅
+- [x] **Publish as NPM package** ✅
+- [ ] Repetition check with Zobrist hashing
 - [ ] WebAssembly optimization
-- [ ] Publish as NPM package
+- [ ] Add position evaluation
+- [ ] Implement full alpha-beta search
 
 ## ⚙️ Continuous Integration (GitHub Actions)
 

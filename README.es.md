@@ -359,12 +359,12 @@ board.loadFEN('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1');
 
 ## 🎯 Próximos Pasos
 
+- [x] **Tests automatizados con suite Perft** ✅
+- [x] **Publicar como paquete NPM** ✅
+- [ ] Detección de repeticiones con Zobrist hashing
+- [ ] Optimización con WebAssembly
 - [ ] Implementar búsqueda alfabeta completa
 - [ ] Agregar evaluación de posiciones
-- [ ] Tabla de transposiciones con Zobrist hashing
-- [x] **Tests automatizados con suite Perft** ✅
-- [ ] Optimización con WebAssembly
-- [ ] Publicar como paquete NPM
 
 ## 🤝 Contribuciones
 
