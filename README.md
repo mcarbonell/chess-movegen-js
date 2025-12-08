@@ -113,12 +113,11 @@ movegen/
 ├── js/
 │   ├── x88.js           # x88 representation generator (1842 lines)
 │   ├── bitboard.js      # Bitboard generator
-│   ├── engine.js        # UCI engine with Web Worker
-│   └── chess.js         # Auxiliary library
-├── css/                 # Styles
+│   ├── magic-tables.js  # Magic tables for bitboard
+│   └── engine.js        # UCI engine with Web Worker
+├── assets/              # css and js assets for the demo
 ├── img/                 # Graphic resources
 ├── engine.html          # Main interactive demo
-├── index.html           # Home page
 ├── ANALISIS.md          # Detailed technical analysis
 └── README.md            # This file
 ```

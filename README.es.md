@@ -112,15 +112,15 @@ movegen/
 ├── js/
 │   ├── x88.js           # Generador con representación x88 (1842 líneas)
 │   ├── bitboard.js      # Generador con bitboards
-│   ├── engine.js        # Motor UCI con Web Worker
-│   └── chess.js         # Librería auxiliar
-├── css/                 # Estilos
+│   ├── magic-tables.js  # Tablas Mágicas para bitboard
+│   └── engine.js        # Motor UCI con Web Worker
+├── assets/              # Estilos css y js para la demo
 ├── img/                 # Recursos gráficos
 ├── engine.html          # Demo interactiva principal
-├── index.html           # Página de inicio
 ├── ANALISIS.md          # Análisis técnico detallado
-└── README.md            # Este archivo
+└── README.es.md         # Este archivo
 ```
+
 
 ## 🎮 Motor UCI
 
