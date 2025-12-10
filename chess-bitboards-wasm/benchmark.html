@@ -19,6 +19,7 @@
         th { background: #007bff; color: white; }
         .speedup { color: #28a745; font-weight: bold; }
         #output { white-space: pre-wrap; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
     </style>
 </head>
 <body>
@@ -32,9 +33,10 @@
             <button id="allBtn">All Operations</button>
         </div>
         
-        <div id="output"></div>
+        <div id="output">Loading...</div>
     </div>
 
+    <script src="../js/bitboard.js"></script>
     <script type="module">
         import init, { 
             popcount64, 
@@ -50,20 +52,8 @@
 
         await init();
 
-        // Load JS bitboard implementation
-        const jsScript = document.createElement('script');
-        jsScript.src = '../js/bitboard.js';
-        await new Promise((resolve) => {
-            jsScript.onload = resolve;
-            document.head.appendChild(jsScript);
-        });
-
         const output = document.getElementById('output');
-        
-        // Attach event listeners
-        document.getElementById('quickBtn').addEventListener('click', () => runBenchmark(100000));
-        document.getElementById('fullBtn').addEventListener('click', () => runBenchmark(1000000));
-        document.getElementById('allBtn').addEventListener('click', runAllOperations);
+        let jsBoard;
         
         function log(html) {
             output.innerHTML += html;
@@ -72,21 +62,39 @@
         function clear() {
             output.innerHTML = '';
         }
-
+        
         // Initialize JS Board
-        const jsBoard = new Board();
-        jsBoard.loadFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+        try {
+            jsBoard = new BBBoard();
+            jsBoard.loadFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+            clear();
+            log('<div class="result">✅ JavaScript BBBoard initialized successfully</div>');
+        } catch (error) {
+            clear();
+            log(`<div class="result error">❌ Error: ${error.message}</div>`);
+            log('<div class="result error">Make sure js/bitboard.js is accessible from this location</div>');
+        }
+        
+        // Attach event listeners
+        document.getElementById('quickBtn').addEventListener('click', () => runBenchmark(100000));
+        document.getElementById('fullBtn').addEventListener('click', () => runBenchmark(1000000));
+        document.getElementById('allBtn').addEventListener('click', runAllOperations);
         
         function runAllOperations() {
+            if (!jsBoard) {
+                log('<div class="result error">❌ JS Board not initialized</div>');
+                return;
+            }
+            
             clear();
             log('<h2>📊 Comprehensive Benchmark</h2>');
             
             const ops = [
+                { name: 'Popcount', iterations: 1000000 },
+                { name: 'LSB', iterations: 1000000 },
                 { name: 'Knight Attacks', iterations: 500000 },
                 { name: 'Rook Attacks', iterations: 200000 },
-                { name: 'Bishop Attacks', iterations: 200000 },
-                { name: 'Popcount', iterations: 1000000 },
-                { name: 'LSB', iterations: 1000000 }
+                { name: 'Bishop Attacks', iterations: 200000 }
             ];
             
             log('<table><tr><th>Operation</th><th>JS Time</th><th>WASM Time</th><th>Speedup</th></tr>');
@@ -105,7 +113,7 @@
             });
             
             log('</table>');
-        };
+        }
 
         function benchmarkOperation(name, iterations) {
             const square = 28; // e4
@@ -119,7 +127,7 @@
                     // JS
                     let start = performance.now();
                     for (let i = 0; i < iterations; i++) {
-                        jsBoard.knightAttacks(square);
+                        knightAttacks(square);
                     }
                     jsTime = performance.now() - start;
                     
@@ -135,7 +143,7 @@
                     // JS
                     start = performance.now();
                     for (let i = 0; i < iterations; i++) {
-                        jsBoard.rookAttacks(square, occupancy);
+                        rookAttacks(square, occupancy);
                     }
                     jsTime = performance.now() - start;
                     
@@ -151,7 +159,7 @@
                     // JS
                     start = performance.now();
                     for (let i = 0; i < iterations; i++) {
-                        jsBoard.bishopAttacks(square, occupancy);
+                        bishopAttacks(square, occupancy);
                     }
                     jsTime = performance.now() - start;
                     
@@ -167,7 +175,7 @@
                     // JS
                     start = performance.now();
                     for (let i = 0; i < iterations; i++) {
-                        jsBoard.popcount(testValue);
+                        BBbitCount(testValue);
                     }
                     jsTime = performance.now() - start;
                     
@@ -183,7 +191,7 @@
                     // JS
                     start = performance.now();
                     for (let i = 0; i < iterations; i++) {
-                        jsBoard.lsb(testValue);
+                        BBbitScanForward(testValue);
                     }
                     jsTime = performance.now() - start;
                     
@@ -200,6 +208,11 @@
         }
 
         function runBenchmark(iterations) {
+            if (!jsBoard) {
+                log('<div class="result error">❌ JS Board not initialized</div>');
+                return;
+            }
+            
             clear();
             log(`<h2>🏁 Benchmark Results (${iterations.toLocaleString()} iterations)</h2>`);
             
@@ -211,12 +224,11 @@
             log('<strong>JavaScript - Knight Attacks</strong><br>');
             let start = performance.now();
             for (let i = 0; i < iterations; i++) {
-                jsBoard.knightAttacks(square);
+                knightAttacks(square);
             }
-            let jsTime = performance.now() - start;
-            let jsOps = (iterations / jsTime * 1000).toFixed(0);
-            log(`Time: ${jsTime.toFixed(2)}ms | ${jsOps.toLocaleString()} ops/sec`);
-            log('</div>');
+            const jsKnightTime = performance.now() - start;
+            log(`Time: ${jsKnightTime.toFixed(2)}ms<br>`);
+            log(`Ops/sec: ${(iterations / jsKnightTime * 1000).toLocaleString()}</div>`);
             
             log('<div class="result wasm">');
             log('<strong>WASM - Knight Attacks</strong><br>');
@@ -224,23 +236,44 @@
             for (let i = 0; i < iterations; i++) {
                 wasm_knight_attacks(square);
             }
-            let wasmTime = performance.now() - start;
-            let wasmOps = (iterations / wasmTime * 1000).toFixed(0);
-            log(`Time: ${wasmTime.toFixed(2)}ms | ${wasmOps.toLocaleString()} ops/sec`);
-            log('</div>');
+            const wasmKnightTime = performance.now() - start;
+            log(`Time: ${wasmKnightTime.toFixed(2)}ms<br>`);
+            log(`Ops/sec: ${(iterations / wasmKnightTime * 1000).toLocaleString()}</div>`);
             
-            const speedup = (jsTime / wasmTime).toFixed(2);
-            const winnerClass = speedup > 1 ? 'winner' : '';
-            log(`<div class="result ${winnerClass}">Speedup: ${speedup}x faster</div>`);
-        }
-    </script>
-</body>
-</html>ing()} ops/sec`);
-            log('</div>');
+            const knightSpeedup = (jsKnightTime / wasmKnightTime).toFixed(2);
+            log(`<div class="result winner">🏆 Speedup: ${knightSpeedup}x</div>`);
             
-            const speedup = (jsTime / wasmTime).toFixed(2);
-            const winnerClass = speedup > 1 ? 'winner' : '';
-            log(`<div class="result ${winnerClass}">Speedup: ${speedup}x faster</div>`);
+            // Rook Attacks
+            log('<div class="result js">');
+            log('<strong>JavaScript - Rook Attacks</strong><br>');
+            start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                rookAttacks(square, occupancy);
+            }
+            const jsRookTime = performance.now() - start;
+            log(`Time: ${jsRookTime.toFixed(2)}ms<br>`);
+            log(`Ops/sec: ${(iterations / jsRookTime * 1000).toLocaleString()}</div>`);
+            
+            log('<div class="result wasm">');
+            log('<strong>WASM - Rook Attacks</strong><br>');
+            start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                wasm_rook_attacks(square, occupancy);
+            }
+            const wasmRookTime = performance.now() - start;
+            log(`Time: ${wasmRookTime.toFixed(2)}ms<br>`);
+            log(`Ops/sec: ${(iterations / wasmRookTime * 1000).toLocaleString()}</div>`);
+            
+            const rookSpeedup = (jsRookTime / wasmRookTime).toFixed(2);
+            log(`<div class="result winner">🏆 Speedup: ${rookSpeedup}x</div>`);
+            
+            // Summary
+            log('<h3>📈 Summary</h3>');
+            log('<table>');
+            log('<tr><th>Operation</th><th>JS Time</th><th>WASM Time</th><th>Speedup</th></tr>');
+            log(`<tr><td>Knight Attacks</td><td>${jsKnightTime.toFixed(2)}ms</td><td>${wasmKnightTime.toFixed(2)}ms</td><td class="speedup">${knightSpeedup}x</td></tr>`);
+            log(`<tr><td>Rook Attacks</td><td>${jsRookTime.toFixed(2)}ms</td><td>${wasmRookTime.toFixed(2)}ms</td><td class="speedup">${rookSpeedup}x</td></tr>`);
+            log('</table>');
         }
     </script>
 </body>
