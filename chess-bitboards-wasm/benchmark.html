@@ -10,14 +10,17 @@
         .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         button { padding: 12px 24px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; margin: 5px; }
         button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
         .result { margin: 15px 0; padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff; }
         .wasm { border-left-color: #28a745; }
         .js { border-left-color: #ffc107; }
         .winner { background: #d4edda; border-left-color: #28a745; font-weight: bold; }
+        .slower { background: #fff3cd; border-left-color: #ffc107; }
         table { width: 100%; border-collapse: collapse; margin: 20px 0; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background: #007bff; color: white; }
         .speedup { color: #28a745; font-weight: bold; }
+        .slowdown { color: #dc3545; font-weight: bold; }
         #output { white-space: pre-wrap; }
         .error { border-left-color: #dc3545; background: #f8d7da; }
     </style>
@@ -30,30 +33,24 @@
         <div>
             <button id="quickBtn">Quick Benchmark (100k ops)</button>
             <button id="fullBtn">Full Benchmark (1M ops)</button>
-            <button id="allBtn">All Operations</button>
+            <button id="intensiveBtn">Intensive (10M ops)</button>
         </div>
         
-        <div id="output">Loading...</div>
+        <div id="output">Loading WASM module...</div>
     </div>
 
-    <script src="../js/bitboard.js"></script>
     <script type="module">
         import init, { 
             popcount64, 
             lsb64, 
             msb64,
-            knight_attacks as wasm_knight_attacks,
-            king_attacks as wasm_king_attacks,
-            rook_attacks as wasm_rook_attacks,
-            bishop_attacks as wasm_bishop_attacks,
-            white_pawn_attacks as wasm_white_pawn_attacks,
-            ChessBitboardEngine
+            knight_attacks,
+            king_attacks,
+            rook_attacks,
+            bishop_attacks
         } from './pkg/chess_bitboards_wasm.js';
 
-        await init();
-
         const output = document.getElementById('output');
-        let jsBoard;
         
         function log(html) {
             output.innerHTML += html;
@@ -62,218 +59,173 @@
         function clear() {
             output.innerHTML = '';
         }
-        
-        // Initialize JS Board
+
+        // JavaScript implementations for comparison
+        function js_popcount(n) {
+            let count = 0;
+            while (n > 0n) {
+                count++;
+                n &= n - 1n;
+            }
+            return count;
+        }
+
+        function js_lsb(n) {
+            if (n === 0n) return -1;
+            let pos = 0;
+            while ((n & 1n) === 0n) {
+                n >>= 1n;
+                pos++;
+            }
+            return pos;
+        }
+
+        // Initialize WASM
         try {
-            jsBoard = new BBBoard();
-            jsBoard.loadFEN('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+            await init();
             clear();
-            log('<div class="result">✅ JavaScript BBBoard initialized successfully</div>');
+            log('<div class="result">✅ WASM module loaded successfully</div>');
+            
+            // Enable buttons
+            document.getElementById('quickBtn').disabled = false;
+            document.getElementById('fullBtn').disabled = false;
+            document.getElementById('intensiveBtn').disabled = false;
         } catch (error) {
             clear();
-            log(`<div class="result error">❌ Error: ${error.message}</div>`);
-            log('<div class="result error">Make sure js/bitboard.js is accessible from this location</div>');
+            log(`<div class="result error">❌ Error loading WASM: ${error.message}</div>`);
+            log('<div class="result error">Make sure pkg/ directory exists with compiled WASM</div>');
         }
         
         // Attach event listeners
         document.getElementById('quickBtn').addEventListener('click', () => runBenchmark(100000));
         document.getElementById('fullBtn').addEventListener('click', () => runBenchmark(1000000));
-        document.getElementById('allBtn').addEventListener('click', runAllOperations);
-        
-        function runAllOperations() {
-            if (!jsBoard) {
-                log('<div class="result error">❌ JS Board not initialized</div>');
-                return;
-            }
-            
-            clear();
-            log('<h2>📊 Comprehensive Benchmark</h2>');
-            
-            const ops = [
-                { name: 'Popcount', iterations: 1000000 },
-                { name: 'LSB', iterations: 1000000 },
-                { name: 'Knight Attacks', iterations: 500000 },
-                { name: 'Rook Attacks', iterations: 200000 },
-                { name: 'Bishop Attacks', iterations: 200000 }
-            ];
-            
-            log('<table><tr><th>Operation</th><th>JS Time</th><th>WASM Time</th><th>Speedup</th></tr>');
-            
-            ops.forEach(op => {
-                const result = benchmarkOperation(op.name, op.iterations);
-                const speedup = (result.jsTime / result.wasmTime).toFixed(2);
-                const speedupClass = speedup > 1 ? 'speedup' : '';
-                
-                log(`<tr>
-                    <td>${op.name}</td>
-                    <td>${result.jsTime.toFixed(2)}ms</td>
-                    <td>${result.wasmTime.toFixed(2)}ms</td>
-                    <td class="${speedupClass}">${speedup}x</td>
-                </tr>`);
-            });
-            
-            log('</table>');
-        }
-
-        function benchmarkOperation(name, iterations) {
-            const square = 28; // e4
-            const occupancy = 0n;
-            const testValue = 0x123456789ABCDEFn;
-            
-            let jsTime, wasmTime;
-            
-            switch(name) {
-                case 'Knight Attacks':
-                    // JS
-                    let start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        knightAttacks(square);
-                    }
-                    jsTime = performance.now() - start;
-                    
-                    // WASM
-                    start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        wasm_knight_attacks(square);
-                    }
-                    wasmTime = performance.now() - start;
-                    break;
-                    
-                case 'Rook Attacks':
-                    // JS
-                    start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        rookAttacks(square, occupancy);
-                    }
-                    jsTime = performance.now() - start;
-                    
-                    // WASM
-                    start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        wasm_rook_attacks(square, occupancy);
-                    }
-                    wasmTime = performance.now() - start;
-                    break;
-                    
-                case 'Bishop Attacks':
-                    // JS
-                    start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        bishopAttacks(square, occupancy);
-                    }
-                    jsTime = performance.now() - start;
-                    
-                    // WASM
-                    start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        wasm_bishop_attacks(square, occupancy);
-                    }
-                    wasmTime = performance.now() - start;
-                    break;
-                    
-                case 'Popcount':
-                    // JS
-                    start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        BBbitCount(testValue);
-                    }
-                    jsTime = performance.now() - start;
-                    
-                    // WASM
-                    start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        popcount64(testValue);
-                    }
-                    wasmTime = performance.now() - start;
-                    break;
-                    
-                case 'LSB':
-                    // JS
-                    start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        BBbitScanForward(testValue);
-                    }
-                    jsTime = performance.now() - start;
-                    
-                    // WASM
-                    start = performance.now();
-                    for (let i = 0; i < iterations; i++) {
-                        lsb64(testValue);
-                    }
-                    wasmTime = performance.now() - start;
-                    break;
-            }
-            
-            return { jsTime, wasmTime };
-        }
+        document.getElementById('intensiveBtn').addEventListener('click', () => runBenchmark(10000000));
 
         function runBenchmark(iterations) {
-            if (!jsBoard) {
-                log('<div class="result error">❌ JS Board not initialized</div>');
-                return;
-            }
-            
             clear();
             log(`<h2>🏁 Benchmark Results (${iterations.toLocaleString()} iterations)</h2>`);
             
+            // Use variable values to prevent compiler optimizations
+            const testValues = [
+                0x123456789ABCDEFn,
+                0xFEDCBA987654321n,
+                0xAAAAAAAAAAAAAAAAn,
+                0x5555555555555555n
+            ];
             const square = 28; // e4
-            const occupancy = 0n;
+            const occupancy = 0xFFFF00000000FFFFn; // All pieces on ranks 1,2,7,8
             
-            // Knight Attacks
+            // Popcount Benchmark
             log('<div class="result js">');
-            log('<strong>JavaScript - Knight Attacks</strong><br>');
+            log('<strong>JavaScript - Popcount</strong><br>');
             let start = performance.now();
             for (let i = 0; i < iterations; i++) {
-                knightAttacks(square);
+                js_popcount(testValues[i % 4]);
             }
-            const jsKnightTime = performance.now() - start;
-            log(`Time: ${jsKnightTime.toFixed(2)}ms<br>`);
-            log(`Ops/sec: ${(iterations / jsKnightTime * 1000).toLocaleString()}</div>`);
+            const jsPopcountTime = performance.now() - start;
+            log(`Time: ${jsPopcountTime.toFixed(2)}ms<br>`);
+            log(`Ops/sec: ${(iterations / jsPopcountTime * 1000).toLocaleString()}</div>`);
             
+            log('<div class="result wasm">');
+            log('<strong>WASM - Popcount</strong><br>');
+            start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                popcount64(testValues[i % 4]);
+            }
+            const wasmPopcountTime = performance.now() - start;
+            log(`Time: ${wasmPopcountTime.toFixed(2)}ms<br>`);
+            log(`Ops/sec: ${(iterations / wasmPopcountTime * 1000).toLocaleString()}</div>`);
+            
+            const popcountSpeedup = (jsPopcountTime / wasmPopcountTime).toFixed(2);
+            if (popcountSpeedup >= 1) {
+                log(`<div class="result winner">🏆 WASM is ${popcountSpeedup}x faster</div>`);
+            } else {
+                log(`<div class="result slower">⚠️ JS is ${(1/popcountSpeedup).toFixed(2)}x faster (WASM overhead)</div>`);
+            }
+            
+            // LSB Benchmark
+            log('<div class="result js">');
+            log('<strong>JavaScript - LSB (Least Significant Bit)</strong><br>');
+            start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                js_lsb(testValues[i % 4]);
+            }
+            const jsLsbTime = performance.now() - start;
+            log(`Time: ${jsLsbTime.toFixed(2)}ms<br>`);
+            log(`Ops/sec: ${(iterations / jsLsbTime * 1000).toLocaleString()}</div>`);
+            
+            log('<div class="result wasm">');
+            log('<strong>WASM - LSB</strong><br>');
+            start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                lsb64(testValues[i % 4]);
+            }
+            const wasmLsbTime = performance.now() - start;
+            log(`Time: ${wasmLsbTime.toFixed(2)}ms<br>`);
+            log(`Ops/sec: ${(iterations / wasmLsbTime * 1000).toLocaleString()}</div>`);
+            
+            const lsbSpeedup = (jsLsbTime / wasmLsbTime).toFixed(2);
+            if (lsbSpeedup >= 1) {
+                log(`<div class="result winner">🏆 WASM is ${lsbSpeedup}x faster</div>`);
+            } else {
+                log(`<div class="result slower">⚠️ JS is ${(1/lsbSpeedup).toFixed(2)}x faster (WASM call overhead)</div>`);
+            }
+            
+            // Knight Attacks (WASM only - no JS comparison needed)
             log('<div class="result wasm">');
             log('<strong>WASM - Knight Attacks</strong><br>');
             start = performance.now();
             for (let i = 0; i < iterations; i++) {
-                wasm_knight_attacks(square);
+                knight_attacks(square);
             }
             const wasmKnightTime = performance.now() - start;
             log(`Time: ${wasmKnightTime.toFixed(2)}ms<br>`);
             log(`Ops/sec: ${(iterations / wasmKnightTime * 1000).toLocaleString()}</div>`);
             
-            const knightSpeedup = (jsKnightTime / wasmKnightTime).toFixed(2);
-            log(`<div class="result winner">🏆 Speedup: ${knightSpeedup}x</div>`);
-            
             // Rook Attacks
-            log('<div class="result js">');
-            log('<strong>JavaScript - Rook Attacks</strong><br>');
-            start = performance.now();
-            for (let i = 0; i < iterations; i++) {
-                rookAttacks(square, occupancy);
-            }
-            const jsRookTime = performance.now() - start;
-            log(`Time: ${jsRookTime.toFixed(2)}ms<br>`);
-            log(`Ops/sec: ${(iterations / jsRookTime * 1000).toLocaleString()}</div>`);
-            
             log('<div class="result wasm">');
-            log('<strong>WASM - Rook Attacks</strong><br>');
+            log('<strong>WASM - Rook Attacks (with occupancy)</strong><br>');
             start = performance.now();
             for (let i = 0; i < iterations; i++) {
-                wasm_rook_attacks(square, occupancy);
+                rook_attacks(square, occupancy);
             }
             const wasmRookTime = performance.now() - start;
             log(`Time: ${wasmRookTime.toFixed(2)}ms<br>`);
             log(`Ops/sec: ${(iterations / wasmRookTime * 1000).toLocaleString()}</div>`);
             
-            const rookSpeedup = (jsRookTime / wasmRookTime).toFixed(2);
-            log(`<div class="result winner">🏆 Speedup: ${rookSpeedup}x</div>`);
+            // Bishop Attacks
+            log('<div class="result wasm">');
+            log('<strong>WASM - Bishop Attacks (with occupancy)</strong><br>');
+            start = performance.now();
+            for (let i = 0; i < iterations; i++) {
+                bishop_attacks(square, occupancy);
+            }
+            const wasmBishopTime = performance.now() - start;
+            log(`Time: ${wasmBishopTime.toFixed(2)}ms<br>`);
+            log(`Ops/sec: ${(iterations / wasmBishopTime * 1000).toLocaleString()}</div>`);
             
             // Summary
             log('<h3>📈 Summary</h3>');
             log('<table>');
-            log('<tr><th>Operation</th><th>JS Time</th><th>WASM Time</th><th>Speedup</th></tr>');
-            log(`<tr><td>Knight Attacks</td><td>${jsKnightTime.toFixed(2)}ms</td><td>${wasmKnightTime.toFixed(2)}ms</td><td class="speedup">${knightSpeedup}x</td></tr>`);
-            log(`<tr><td>Rook Attacks</td><td>${jsRookTime.toFixed(2)}ms</td><td>${wasmRookTime.toFixed(2)}ms</td><td class="speedup">${rookSpeedup}x</td></tr>`);
+            log('<tr><th>Operation</th><th>JS Time</th><th>WASM Time</th><th>Result</th></tr>');
+            
+            const popcountClass = popcountSpeedup >= 1 ? 'speedup' : 'slowdown';
+            const popcountText = popcountSpeedup >= 1 ? `${popcountSpeedup}x faster` : `${(1/popcountSpeedup).toFixed(2)}x slower`;
+            log(`<tr><td>Popcount</td><td>${jsPopcountTime.toFixed(2)}ms</td><td>${wasmPopcountTime.toFixed(2)}ms</td><td class="${popcountClass}">${popcountText}</td></tr>`);
+            
+            const lsbClass = lsbSpeedup >= 1 ? 'speedup' : 'slowdown';
+            const lsbText = lsbSpeedup >= 1 ? `${lsbSpeedup}x faster` : `${(1/lsbSpeedup).toFixed(2)}x slower`;
+            log(`<tr><td>LSB</td><td>${jsLsbTime.toFixed(2)}ms</td><td>${wasmLsbTime.toFixed(2)}ms</td><td class="${lsbClass}">${lsbText}</td></tr>`);
+            
+            log(`<tr><td>Knight Attacks</td><td>-</td><td>${wasmKnightTime.toFixed(2)}ms</td><td>${(iterations / wasmKnightTime * 1000 / 1000000).toFixed(2)}M ops/s</td></tr>`);
+            log(`<tr><td>Rook Attacks</td><td>-</td><td>${wasmRookTime.toFixed(2)}ms</td><td>${(iterations / wasmRookTime * 1000 / 1000000).toFixed(2)}M ops/s</td></tr>`);
+            log(`<tr><td>Bishop Attacks</td><td>-</td><td>${wasmBishopTime.toFixed(2)}ms</td><td>${(iterations / wasmBishopTime * 1000 / 1000000).toFixed(2)}M ops/s</td></tr>`);
             log('</table>');
+            
+            if (popcountSpeedup >= 1) {
+                log(`<div class="result winner">💡 <strong>Key Insight:</strong> WASM excels at ${popcountSpeedup}x speedup for complex bit operations like Popcount!</div>`);
+            }
+            log(`<div class="result">📝 <strong>Note:</strong> Simple operations like LSB may be faster in JS due to V8 optimizations and WASM call overhead.</div>`);
         }
     </script>
 </body>
