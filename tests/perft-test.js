@@ -91,15 +91,9 @@ function calculateNPS(nodes, ms) {
 }
 
 // Test results accumulator
-const testResults = {
-    total: 0,
-    passed: 0,
-    failed: 0,
-    errors: [],
-    timings: []
-};
+const allResults = {};
 
-function runPerftTest(board, fen, depth, expectedResult, testName) {
+function runPerftTest(results, board, fen, depth, expectedResult, testName) {
     try {
         board.loadFEN(fen);
 
@@ -110,17 +104,17 @@ function runPerftTest(board, fen, depth, expectedResult, testName) {
         const elapsedMs = endTime - startTime;
         const nps = calculateNPS(result, elapsedMs);
 
-        testResults.total++;
+        results.total++;
 
         if (result === expectedResult) {
-            testResults.passed++;
+            results.passed++;
             console.log(
                 `  ${colors.green}✓${colors.reset} Depth ${depth}: ` +
                 `${colors.cyan}${formatNumber(result)}${colors.reset} nodes ` +
                 `${colors.gray}[${formatTime(elapsedMs)}, ${formatNumber(nps)} NPS]${colors.reset}`
             );
 
-            testResults.timings.push({
+            results.timings.push({
                 name: testName,
                 depth: depth,
                 nodes: result,
@@ -130,14 +124,14 @@ function runPerftTest(board, fen, depth, expectedResult, testName) {
 
             return true;
         } else {
-            testResults.failed++;
+            results.failed++;
             const error = {
                 test: testName,
                 depth: depth,
                 expected: expectedResult,
                 got: result
             };
-            testResults.errors.push(error);
+            results.errors.push(error);
 
             console.log(
                 `  ${colors.red}✗${colors.reset} Depth ${depth}: ` +
@@ -147,9 +141,9 @@ function runPerftTest(board, fen, depth, expectedResult, testName) {
             return false;
         }
     } catch (error) {
-        testResults.total++;
-        testResults.failed++;
-        testResults.errors.push({
+        results.total++;
+        results.failed++;
+        results.errors.push({
             test: testName,
             depth: depth,
             error: error.message
@@ -163,6 +157,15 @@ function testGenerator(generatorName, BoardClass, positions) {
     console.log(`\n${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
     console.log(`${colors.blue}Testing: ${generatorName}${colors.reset}`);
     console.log(`${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}\n`);
+
+    const results = {
+        total: 0,
+        passed: 0,
+        failed: 0,
+        errors: [],
+        timings: []
+    };
+    allResults[generatorName] = results;
 
     const board = new BoardClass();
 
@@ -179,6 +182,7 @@ function testGenerator(generatorName, BoardClass, positions) {
         for (const depth of depths) {
             const testName = `${generatorName} - ${position.name} - Depth ${depth}`;
             runPerftTest(
+                results,
                 board,
                 position.fen,
                 depth,
@@ -196,52 +200,72 @@ function printSummary() {
     console.log(`${colors.blue}Summary${colors.reset}`);
     console.log(`${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}\n`);
 
-    const passRate = ((testResults.passed / testResults.total) * 100).toFixed(1);
+    let totalGlobal = 0;
+    let passedGlobal = 0;
+    let failedGlobal = 0;
 
-    console.log(`Total tests: ${testResults.total}`);
-    console.log(`${colors.green}Passed: ${testResults.passed}${colors.reset}`);
-    console.log(`${colors.red}Failed: ${testResults.failed}${colors.reset}`);
-    console.log(`Pass rate: ${passRate}%\n`);
+    for (const genName in allResults) {
+        const results = allResults[genName];
+        totalGlobal += results.total;
+        passedGlobal += results.passed;
+        failedGlobal += results.failed;
 
-    if (testResults.errors.length > 0) {
-        console.log(`${colors.red}Errors:${colors.reset}`);
-        testResults.errors.forEach(err => {
-            console.log(`  ${colors.red}✗${colors.reset} ${err.test}`);
-            if (err.error) {
-                console.log(`    ${colors.gray}Error: ${err.error}${colors.reset}`);
-            } else {
-                console.log(`    ${colors.gray}Expected: ${formatNumber(err.expected)}, Got: ${formatNumber(err.got)}${colors.reset}`);
-            }
-        });
+        const passRate = ((results.passed / results.total) * 100).toFixed(1);
+        console.log(`${colors.blue}${genName}:${colors.reset}`);
+        console.log(`  Tests: ${results.total}, Passed: ${colors.green}${results.passed}${colors.reset}, Failed: ${colors.red}${results.failed}${colors.reset} (${passRate}%)`);
+
+        // Performance summary per generator
+        if (results.timings.length > 0) {
+            // Group by depth
+            const byDepth = {};
+            results.timings.forEach(t => {
+                if (!byDepth[t.depth]) byDepth[t.depth] = [];
+                byDepth[t.depth].push(t);
+            });
+
+            Object.keys(byDepth).sort((a, b) => a - b).forEach(depth => {
+                const tests = byDepth[depth];
+                const avgNPS = tests.reduce((sum, t) => sum + t.nps, 0) / tests.length;
+                const totalNodes = tests.reduce((sum, t) => sum + t.nodes, 0);
+                const totalTime = tests.reduce((sum, t) => sum + t.time, 0);
+
+                console.log(`    Depth ${depth}: ${colors.cyan}${formatNumber(Math.round(avgNPS))} NPS avg${colors.reset} ` +
+                    `${colors.gray}(${formatNumber(totalNodes)} nodes in ${formatTime(totalTime)})${colors.reset}`);
+            });
+        }
         console.log('');
     }
 
-    // Performance summary
-    if (testResults.timings.length > 0) {
-        console.log(`${colors.cyan}Performance Summary:${colors.reset}`);
+    const globalPassRate = ((passedGlobal / totalGlobal) * 100).toFixed(1);
+    console.log(`${colors.blue}Global Summary:${colors.reset}`);
+    console.log(`Total tests: ${totalGlobal}`);
+    console.log(`${colors.green}Passed: ${passedGlobal}${colors.reset}`);
+    console.log(`${colors.red}Failed: ${failedGlobal}${colors.reset}`);
+    console.log(`Pass rate: ${globalPassRate}%\n`);
 
-        // Group by depth
-        const byDepth = {};
-        testResults.timings.forEach(t => {
-            if (!byDepth[t.depth]) byDepth[t.depth] = [];
-            byDepth[t.depth].push(t);
-        });
-
-        Object.keys(byDepth).sort((a, b) => a - b).forEach(depth => {
-            const tests = byDepth[depth];
-            const avgNPS = tests.reduce((sum, t) => sum + t.nps, 0) / tests.length;
-            const totalNodes = tests.reduce((sum, t) => sum + t.nodes, 0);
-            const totalTime = tests.reduce((sum, t) => sum + t.time, 0);
-
-            console.log(`  Depth ${depth}: ${colors.cyan}${formatNumber(Math.round(avgNPS))} NPS avg${colors.reset} ` +
-                `${colors.gray}(${formatNumber(totalNodes)} nodes in ${formatTime(totalTime)})${colors.reset}`);
-        });
+    // Global Errors
+    let hasErrors = false;
+    for (const genName in allResults) {
+        if (allResults[genName].errors.length > 0) {
+            if (!hasErrors) {
+                console.log(`${colors.red}Errors Detail:${colors.reset}`);
+                hasErrors = true;
+            }
+            allResults[genName].errors.forEach(err => {
+                console.log(`  ${colors.red}✗${colors.reset} ${err.test}`);
+                if (err.error) {
+                    console.log(`    ${colors.gray}Error: ${err.error}${colors.reset}`);
+                } else {
+                    console.log(`    ${colors.gray}Expected: ${formatNumber(err.expected)}, Got: ${formatNumber(err.got)}${colors.reset}`);
+                }
+            });
+        }
     }
 
     console.log('');
 
     // Exit with error code if tests failed
-    if (testResults.failed > 0) {
+    if (failedGlobal > 0) {
         process.exit(1);
     }
 }
