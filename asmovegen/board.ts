@@ -40,23 +40,23 @@ export class Board {
 
     pieceat: Int8Array = new Int8Array(128);
     kingsquares: Int8Array = new Int8Array(2);
-    piecesquares: Int8Array[] = [new Int8Array(16), new Int8Array(16)];
+    piecesquares: Int8Array = new Int8Array(32); // 16 for white (0-15), 16 for black (16-31)
 
-    moveFrom: Int32Array = new Int32Array(256);
-    moveTo: Int32Array = new Int32Array(256);
-    moveMovingpiece: Uint8Array = new Uint8Array(256);
-    moveCaptured: Uint8Array = new Uint8Array(256);
-    movePromoted: Uint8Array = new Uint8Array(256);
-    moveMask: Uint8Array = new Uint8Array(256);
+    moveFrom: Int32Array = new Int32Array(MAXPLY * 256);
+    moveTo: Int32Array = new Int32Array(MAXPLY * 256);
+    moveMovingpiece: Uint8Array = new Uint8Array(MAXPLY * 256);
+    moveCaptured: Uint8Array = new Uint8Array(MAXPLY * 256);
+    movePromoted: Uint8Array = new Uint8Array(MAXPLY * 256);
+    moveMask: Uint8Array = new Uint8Array(MAXPLY * 256);
     moveCount: i32 = 0;
 
-    attacks: Int32Array[] = [new Int32Array(128), new Int32Array(128)];
-    numattacks: Uint8Array[] = [new Uint8Array(128), new Uint8Array(128)];
-    chekingSquares: Int32Array[] = [new Int32Array(128), new Int32Array(128)];
-    pinDirection: Int32Array[] = [new Int32Array(128), new Int32Array(128)];
-    inchekValidSquares: Uint8Array[] = [new Uint8Array(128), new Uint8Array(128)];
-    matingSquares: Int32Array[] = [new Int32Array(128), new Int32Array(128)];
-    kingescapes: Int8Array[] = [new Int8Array(8), new Int8Array(8)];
+    attacks: Int32Array = new Int32Array(256); // 128 for white, 128 for black
+    numattacks: Uint8Array = new Uint8Array(256);
+    chekingSquares: Int32Array = new Int32Array(256);
+    pinDirection: Int32Array = new Int32Array(256);
+    inchekValidSquares: Uint8Array = new Uint8Array(256);
+    matingSquares: Int32Array = new Int32Array(256);
+    kingescapes: Int8Array = new Int8Array(16); // 8 per side
 
     kingschecks: Uint8Array = new Uint8Array(2);
     // For undo - using separate arrays instead of returning object
@@ -105,10 +105,8 @@ export class Board {
         this.inCheckMate = false;
         this.inStalemate = false;
         this.pieceat.fill(EMPTY);
-        this.kingsquares[0] = -1;
-        this.kingsquares[1] = -1;
-        this.piecesquares[0].fill(-1);
-        this.piecesquares[1].fill(-1);
+        this.kingsquares.fill(-1);
+        this.piecesquares.fill(-1);
     }
 
     addpiece(color: u8, piece: u8, sq: i32): void {
@@ -117,9 +115,10 @@ export class Board {
             this.kingsquares[color] = <i8>sq;
             return;
         }
+        let base = <i32>color << 4;
         for (let i = 0; i < 16; i++) {
-            if (this.piecesquares[color][i] == -1) {
-                this.piecesquares[color][i] = <i8>sq;
+            if (this.piecesquares[base | i] == -1) {
+                this.piecesquares[base | i] = <i8>sq;
                 return;
             }
         }
@@ -127,9 +126,10 @@ export class Board {
 
     removepiece(color: u8, sq: i32): void {
         this.pieceat[sq] = EMPTY;
+        let base = <i32>color << 4;
         for (let i = 0; i < 16; i++) {
-            if (this.piecesquares[color][i] == sq) {
-                this.piecesquares[color][i] = -1;
+            if (this.piecesquares[base | i] == sq) {
+                this.piecesquares[base | i] = -1;
                 return;
             }
         }
@@ -142,68 +142,69 @@ export class Board {
             this.kingsquares[color] = <i8>to;
             return;
         }
+        let base = <i32>color << 4;
         for (let i = 0; i < 16; i++) {
-            if (this.piecesquares[color][i] == from) {
-                this.piecesquares[color][i] = <i8>to;
+            if (this.piecesquares[base | i] == from) {
+                this.piecesquares[base | i] = <i8>to;
                 return;
             }
         }
     }
 
     addattack(who: u8, piecetype: u8, from: i32, to: i32): void {
-        this.attacks[who][to] |= attackbit(piecetype);
-        this.numattacks[who][to]++;
+        let base = <i32>who << 7;
+        unchecked(this.attacks[base | to] |= attackbit(piecetype));
+        unchecked(this.numattacks[base | to]++);
 
-        if (to == this.kingsquares[1 - who]) {
+        if (to == unchecked(this.kingsquares[1 - who])) {
             if ((1 - who) == this.stm) {
-                this.kingschecks[1 - who]++;
+                unchecked(this.kingschecks[1 - who]++);
             }
             this.checkingSquare = from;
-            this.inchekValidSquares[1 - who][from] = 1;
+            unchecked(this.inchekValidSquares[(<i32>(1 - who) << 7) | from] = 1);
         }
     }
 
     addmove(from: i32, to: i32, maskbits: u8 = 0, promotedpiece: u8 = 0): void {
-        let movingpiece = this.pieceat[from];
-        let capturedpiece = (maskbits & MASK_EP) ? PAWN : this.pieceat[to];
+        let movingpiece = unchecked(this.pieceat[from]);
+        let capturedpiece = (maskbits & MASK_EP) ? PAWN : unchecked(this.pieceat[to]);
 
-        if (this.inCheck && ptype(movingpiece) != KING && this.inchekValidSquares[this.stm][to] == 0) {
+        if (this.inCheck && ptype(movingpiece) != KING && unchecked(this.inchekValidSquares[(<i32>this.stm << 7) | to] == 0)) {
             return;
         }
 
-        let pindir = this.pinDirection[this.stm][from];
+        let pindir = unchecked(this.pinDirection[(<i32>this.stm << 7) | from]);
         if (pindir != 0) {
             let diff = from - to;
             let index = diff + 119;
-            let movedirection = (index >= 0 && index < 239) ? RAYS[index] : 0;
+            let movedirection = (index >= 0 && index < 239) ? unchecked(RAYS[index]) : 0;
             if (absI32(pindir) != absI32(movedirection)) {
                 return;
             }
         }
 
-        let chekingpiece = (maskbits & MASK_PROMOTION) ? promotedpiece : movingpiece;
-        if (this.chekingSquares[this.stm][to] & checkbit(ptype(chekingpiece))) {
+        if (unchecked(this.chekingSquares[(<i32>this.stm << 7) | to]) & checkbit(ptype((maskbits & MASK_PROMOTION) ? promotedpiece : movingpiece))) {
             maskbits |= MASK_CHECK;
         }
 
         if (maskbits & MASK_CASTLING) {
             let rookfile = (file(to) == FILE_G) ? FILE_F : FILE_D;
             let rooksquare = square(rookfile, rank(to));
-            if (this.chekingSquares[this.stm][rooksquare] & checkbit(ROOK)) {
+            if (unchecked(this.chekingSquares[(<i32>this.stm << 7) | rooksquare]) & checkbit(ROOK)) {
                 maskbits |= MASK_CHECK;
             }
         }
 
-        if (this.chekingSquares[this.stm][from] & MASK_DISCOVERCHECK) {
-            let discoverinfo = this.chekingSquares[this.stm][from];
-            let offset = discoverinfo & 0xFF;
+        if (unchecked(this.chekingSquares[(<i32>this.stm << 7) | from]) & MASK_DISCOVERCHECK) {
+            let discoverinfo = unchecked(this.chekingSquares[(<i32>this.stm << 7) | from]);
+            let offset = discoverinfo & 0x7F;
             let moveoffset = absI32(from - to);
-            if (moveoffset != offset || (maskbits & MASK_CASTLING)) {
+            if (offset == 0 || (moveoffset % offset) != 0 || (maskbits & MASK_CASTLING)) {
                 maskbits |= MASK_DISCOVERCHECK;
             }
         }
 
-        let attackbits = this.attacks[opposite(this.stm)][to];
+        let attackbits = unchecked(this.attacks[(<i32>opposite(this.stm) << 7) | to]);
         if (attackbits == 0) {
             maskbits |= MASK_SAFE;
         } else {
@@ -218,17 +219,18 @@ export class Board {
             if (ptype(capturedpiece) > ptype(movingpiece)) maskbits |= MASK_WINNINGCAPTURE;
         }
 
-        this.moveFrom[this.moveCount] = from;
-        this.moveTo[this.moveCount] = to;
-        this.moveMovingpiece[this.moveCount] = movingpiece;
-        this.moveCaptured[this.moveCount] = capturedpiece;
-        this.movePromoted[this.moveCount] = promotedpiece;
-        this.moveMask[this.moveCount] = maskbits;
+        let idx = (this.historyPly << 8) | this.moveCount;
+        unchecked(this.moveFrom[idx] = from);
+        unchecked(this.moveTo[idx] = to);
+        unchecked(this.moveMovingpiece[idx] = movingpiece);
+        unchecked(this.moveCaptured[idx] = capturedpiece);
+        unchecked(this.movePromoted[idx] = promotedpiece);
+        unchecked(this.moveMask[idx] = maskbits);
         this.moveCount++;
     }
 
     addpawnmove(from: i32, to: i32): void {
-        if (this.inCheck && this.inchekValidSquares[this.stm][to] == 0) return;
+        if (this.inCheck && this.inchekValidSquares[(<i32>this.stm << 7) | to] == 0) return;
 
         if (rank(to) == RANK_8) {
             this.addmove(from, to, MASK_PROMOTION, WN);
@@ -252,13 +254,14 @@ export class Board {
     generateMoves(): void {
         // Reset using fill (original method)
         for (let i = 0; i < 2; i++) {
-            this.attacks[i].fill(0);
-            this.numattacks[i].fill(0);
-            this.inchekValidSquares[i].fill(0);
-            this.pinDirection[i].fill(0);
-            this.chekingSquares[i].fill(0);
-            this.matingSquares[i].fill(0);
-            this.kingescapes[i].fill(0);
+            let base = i << 7;
+            this.attacks.fill(0, base, base + 128);
+            this.numattacks.fill(0, base, base + 128);
+            this.inchekValidSquares.fill(0, base, base + 128);
+            this.pinDirection.fill(0, base, base + 128);
+            this.chekingSquares.fill(0, base, base + 128);
+            this.matingSquares.fill(0, base, base + 128);
+            this.kingescapes.fill(0, i << 3, (i << 3) + 8);
         }
         this.kingschecks[0] = 0;
         this.kingschecks[1] = 0;
@@ -273,13 +276,14 @@ export class Board {
             let enemyking = this.kingsquares[1 - turncolor];
             let offsetsign = (turncolor == 0) ? -1 : 1;
             let oppcolor = 1 - turncolor;
+            let base = <i32>turncolor << 7;
 
             // Pawn checks
             for (let i = 0; i < 2; i++) {
                 let offset = (i == 0) ? 17 : 15;
                 let csq = enemyking + (offset * offsetsign);
                 if (validSquare(csq) && pcolor(this.pieceat[csq]) != turncolor) {
-                    this.chekingSquares[turncolor][csq] |= checkbit(PAWN);
+                    this.chekingSquares[base | csq] |= checkbit(PAWN);
                 }
             }
 
@@ -287,7 +291,7 @@ export class Board {
             for (let i = 0; i < 8; i++) {
                 let csq = enemyking + OFFSETS_KNIGHT[i];
                 if (validSquare(csq) && pcolor(this.pieceat[csq]) != turncolor) {
-                    this.chekingSquares[turncolor][csq] |= checkbit(KNIGHT);
+                    this.chekingSquares[base | csq] |= checkbit(KNIGHT);
                 }
             }
 
@@ -303,12 +307,12 @@ export class Board {
 
                         let dest = this.pieceat[to];
                         if (dest == EMPTY) {
-                            this.chekingSquares[turncolor][to] |= checkbit((p == 0) ? BISHOP : ROOK);
+                            this.chekingSquares[base | to] |= checkbit((p == 0) ? BISHOP : ROOK);
                             continue;
                         }
 
                         if (pcolor(dest) == oppcolor) {
-                            this.chekingSquares[turncolor][to] |= checkbit((p == 0) ? BISHOP : ROOK);
+                            this.chekingSquares[base | to] |= checkbit((p == 0) ? BISHOP : ROOK);
                             break;
                         }
 
@@ -322,7 +326,7 @@ export class Board {
                             if (pcolor(dest) != turncolor) break;
                             if (ptype(dest) == BISHOP || ptype(dest) == QUEEN || ptype(dest) == ROOK) {
                                 let absOff = offset < 0 ? -offset : offset;
-                                this.chekingSquares[turncolor][blockingsq] = <u8>(absOff | MASK_DISCOVERCHECK);
+                                this.chekingSquares[base | blockingsq] = <u8>(absOff | MASK_DISCOVERCHECK);
                             }
                             break;
                         }
@@ -335,12 +339,14 @@ export class Board {
         // Calculate enemy attacks and pins
         let turn = opposite(this.stm);
         let enemysign = -sign;
+        let baseTurn = <i32>turn << 7;
+        let piecesBase = <i32>turn << 4;
 
         for (let i = 0; i < 16; i++) {
-            let sq = this.piecesquares[turn][i];
+            let sq = unchecked(this.piecesquares[piecesBase | i]);
             if (sq < 0) continue;
 
-            let piece = this.pieceat[sq];
+            let piece = unchecked(this.pieceat[sq]);
             if (piece == EMPTY) continue;
 
             let piecetype = ptype(piece);
@@ -358,7 +364,7 @@ export class Board {
             } else if (piecetype == KNIGHT || piecetype == KING) {
                 let offsets = (piecetype == KNIGHT) ? OFFSETS_KNIGHT : OFFSETS_KING;
                 for (let j = 0; j < offsets.length; j++) {
-                    let to = sq + offsets[j];
+                    let to = sq + unchecked(offsets[j]);
                     if (validSquare(to)) {
                         this.addattack(turn, piecetype, sq, to);
                     }
@@ -369,11 +375,11 @@ export class Board {
                               (piecetype == ROOK) ? OFFSETS_ROOK : OFFSETS_QUEEN;
                 for (let j = 0; j < offsets.length; j++) {
                     let to: i32 = sq;
-                    let offset = offsets[j];
+                    let offset = unchecked(offsets[j]);
                     while (true) {
                         to = <i32>(to + offset);
                         if (!validSquare(to)) break;
-                        let dest = this.pieceat[to];
+                        let dest = unchecked(this.pieceat[to]);
                         if (dest != EMPTY) {
                             this.addSliderAttack(turn, piecetype, sq, to, offset);
                             break;
@@ -385,135 +391,144 @@ export class Board {
         }
 
         // King attacks
-        let kingSq = this.kingsquares[turn];
+        let kingSq = unchecked(this.kingsquares[turn]);
         for (let i = 0; i < OFFSETS_KING.length; i++) {
-            let to = kingSq + OFFSETS_KING[i];
+            let to = kingSq + unchecked(OFFSETS_KING[i]);
             if (validSquare(to)) {
                 this.addattack(turn, KING, kingSq, to);
             }
         }
 
-        this.inCheck = this.kingschecks[this.stm] > 0;
-        this.inDoubleCheck = this.kingschecks[this.stm] > 1;
+        this.inCheck = unchecked(this.kingschecks[this.stm]) > 0;
+        this.inDoubleCheck = unchecked(this.kingschecks[this.stm]) > 1;
 
-        // Generate moves for side to move
-        if (!this.inDoubleCheck) {
-            for (let i = 0; i < 16; i++) {
-                let sq = this.piecesquares[this.stm][i];
-                if (sq < 0) continue;
+        // Generate our moves
+        for (let i = 0; i < 16; i++) {
+            let sq = unchecked(this.piecesquares[(<i32>this.stm << 4) | i]);
+            if (sq < 0) continue;
 
-                let piece = this.pieceat[sq];
-                if (piece == EMPTY) continue;
+            let piece = unchecked(this.pieceat[sq]);
+            if (piece == EMPTY) continue;
 
-                let piecetype = ptype(piece);
-                if (piecetype == PAWN) {
-                    // Pawn advances
-                    let to = sq + (16 * sign);
-                    if (this.pieceat[to] == EMPTY) {
+            let piecetype = ptype(piece);
+            let color = pcolor(piece);
+            if (color != this.stm) continue;
+
+            if (this.inDoubleCheck && piecetype != KING) continue;
+
+            if (piecetype == PAWN) {
+                // Pawn advances
+                let to = sq + (16 * sign);
+                if (validSquare(to) && unchecked(this.pieceat[to]) == EMPTY) {
+                    if (unchecked(this.pinDirection[(<i32>this.stm << 7) | sq]) == 0 || absI32(unchecked(this.pinDirection[(<i32>this.stm << 7) | sq])) == 16) {
                         this.addpawnmove(sq, to);
                         if (rank(sq) == secondrank) {
                             to = sq + (32 * sign);
-                            if (this.pieceat[to] == EMPTY) {
+                            if (unchecked(this.pieceat[to]) == EMPTY) {
                                 this.addmove(sq, to);
                             }
                         }
                     }
+                }
 
-                    // Pawn captures
-                    for (let j = 0; j < 2; j++) {
-                        let offset = (j == 0) ? 17 : 15;
-                        to = sq + (offset * sign);
-                        if (!validSquare(to)) continue;
-                        this.addattack(this.stm, piecetype, sq, to);
+                // Pawn captures
+                for (let j = 0; j < 2; j++) {
+                    let offset = (j == 0) ? 17 : 15;
+                    to = sq + (offset * sign);
+                    if (!validSquare(to)) continue;
+                    this.addattack(this.stm, piecetype, sq, to);
 
-                        if (pcolor(this.pieceat[to]) == opposite(this.stm)) {
-                            this.addpawnmove(sq, to);
-                        }
-                        if (to == this.enpassantSquare) {
-                            let ilegalep = false;
-                            let kingsquare = this.kingsquares[this.stm];
-                            if (rank(sq) == rank(kingsquare)) {
-                                let dir = (file(kingsquare) < file(sq)) ? 1 : -1;
-                                let next = kingsquare + dir;
-                                let count = 0;
-                                while (validSquare(next)) {
-                                    let piece = this.pieceat[next];
-                                    next = next + dir;
-                                    if (piece == EMPTY) continue;
+                    if (pcolor(unchecked(this.pieceat[to])) == opposite(this.stm)) {
+                        this.addpawnmove(sq, to);
+                    }
+                    if (to == this.enpassantSquare) {
+                        let ilegalep = false;
+                        let kingsquare = unchecked(this.kingsquares[this.stm]);
+                        if (rank(sq) == rank(kingsquare)) {
+                            let dir = (file(kingsquare) < file(sq)) ? 1 : -1;
+                            let next = kingsquare + dir;
+                            let count = 0;
+                            while (validSquare(next)) {
+                                let piece = unchecked(this.pieceat[next]);
+                                if (piece != EMPTY) {
                                     count++;
-                                    if (count == 3 && (ptype(piece) == ROOK || ptype(piece) == QUEEN) && pcolor(piece) == opposite(this.stm)) {
-                                        ilegalep = true;
+                                    if (count == 3) {
+                                        if ((ptype(piece) == ROOK || ptype(piece) == QUEEN) && pcolor(piece) == opposite(this.stm)) {
+                                            ilegalep = true;
+                                        }
                                         break;
                                     }
                                 }
+                                next = next + dir;
                             }
-                            if (!ilegalep) {
-                                if (this.inCheck) {
-                                    let chekingpiece = this.pieceat[this.checkingSquare];
-                                    if (ptype(chekingpiece) == PAWN) {
-                                        this.inchekValidSquares[this.stm][this.enpassantSquare] = 1;
-                                        this.addmove(sq, to, MASK_EP);
-                                        this.inchekValidSquares[this.stm][this.enpassantSquare] = 0;
-                                    }
-                                } else {
+                        }
+
+                        if (!ilegalep) {
+                            if (this.inCheck) {
+                                let chekingpiece = unchecked(this.pieceat[this.checkingSquare]);
+                                if (ptype(chekingpiece) == PAWN) {
+                                    unchecked(this.inchekValidSquares[(<i32>this.stm << 7) | this.enpassantSquare] = 1);
                                     this.addmove(sq, to, MASK_EP);
+                                    unchecked(this.inchekValidSquares[(<i32>this.stm << 7) | this.enpassantSquare] = 0);
                                 }
+                            } else {
+                                this.addmove(sq, to, MASK_EP);
                             }
                         }
                     }
-                } else if (piecetype == KNIGHT) {
-                    if (this.pinDirection[this.stm][sq] != 0) continue;
-                    for (let j = 0; j < OFFSETS_KNIGHT.length; j++) {
-                        let to = sq + OFFSETS_KNIGHT[j];
-                        if (!validSquare(to)) continue;
+                }
+            } else if (piecetype == KNIGHT) {
+                if (unchecked(this.pinDirection[(<i32>this.stm << 7) | sq]) != 0) continue;
+                for (let j = 0; j < OFFSETS_KNIGHT.length; j++) {
+                    let to = sq + unchecked(OFFSETS_KNIGHT[j]);
+                    if (!validSquare(to)) continue;
+                    this.addattack(this.stm, piecetype, sq, to);
+                    if (unchecked(this.pieceat[to]) == EMPTY || pcolor(unchecked(this.pieceat[to])) == opposite(this.stm)) {
+                        this.addmove(sq, to);
+                    }
+                }
+            } else if (piecetype == BISHOP || piecetype == ROOK || piecetype == QUEEN) {
+                let offsets = (piecetype == BISHOP) ? OFFSETS_BISHOP :
+                              (piecetype == ROOK) ? OFFSETS_ROOK : OFFSETS_QUEEN;
+                let pindir = unchecked(this.pinDirection[(<i32>this.stm << 7) | sq]);
+
+                for (let j = 0; j < offsets.length; j++) {
+                    let offset = unchecked(offsets[j]);
+                    if (pindir != 0) {
+                        let absPin = pindir < 0 ? -pindir : pindir;
+                        let absOffset = offset < 0 ? -offset : offset;
+                        if (absPin != absOffset) continue;
+                    }
+
+                    let to: i32 = sq;
+                    while (true) {
+                        to = <i32>(to + offset);
+                        if (!validSquare(to)) break;
+                        let dest = unchecked(this.pieceat[to]);
+                        if (dest != EMPTY) {
+                            if (pcolor(dest) == opposite(this.stm)) {
+                                this.addmove(sq, to);
+                            }
+                            this.addSliderAttack(this.stm, piecetype, sq, to, offset);
+                            break;
+                        }
                         this.addattack(this.stm, piecetype, sq, to);
-                        if (this.pieceat[to] == EMPTY || pcolor(this.pieceat[to]) == opposite(this.stm)) {
-                            this.addmove(sq, to);
-                        }
-                    }
-                } else if (piecetype == BISHOP || piecetype == ROOK || piecetype == QUEEN) {
-                    let offsets = (piecetype == BISHOP) ? OFFSETS_BISHOP :
-                                  (piecetype == ROOK) ? OFFSETS_ROOK : OFFSETS_QUEEN;
-                    let pindir = this.pinDirection[this.stm][sq];
-
-                    for (let j = 0; j < offsets.length; j++) {
-                        let offset = offsets[j];
-                        if (pindir != 0) {
-                            let absPin = pindir < 0 ? -pindir : pindir;
-                            let absOffset = offset < 0 ? -offset : offset;
-                            if (absPin != absOffset) continue;
-                        }
-
-                        let to: i32 = sq;
-                        while (true) {
-                            to = <i32>(to + offset);
-                            if (!validSquare(to)) break;
-                            let dest = this.pieceat[to];
-                            if (dest != EMPTY) {
-                                if (pcolor(dest) == opposite(this.stm)) {
-                                    this.addmove(sq, to);
-                                }
-                                this.addSliderAttack(this.stm, piecetype, sq, to, offset);
-                                break;
-                            }
-                            this.addattack(this.stm, piecetype, sq, to);
-                            this.addmove(sq, to);
-                        }
+                        this.addmove(sq, to);
                     }
                 }
             }
         }
 
         // King moves (always generated, even in double check)
-        let ks = this.kingsquares[this.stm];
+        let ks = unchecked(this.kingsquares[this.stm]);
         for (let i = 0; i < OFFSETS_KING.length; i++) {
-            let to = ks + OFFSETS_KING[i];
+            let to = ks + unchecked(OFFSETS_KING[i]);
             if (!validSquare(to)) continue;
             this.addattack(this.stm, KING, ks, to);
 
-            if (this.numattacks[opposite(this.stm)][to] > 0) continue;
+            if (unchecked(this.numattacks[(<i32>opposite(this.stm) << 7) | to]) > 0) continue;
 
-            let dest = this.pieceat[to];
+            let dest = unchecked(this.pieceat[to]);
             if (dest == EMPTY || pcolor(dest) == opposite(this.stm)) {
                 this.addmove(ks, to);
             }
@@ -522,66 +537,44 @@ export class Board {
         // Castling
         if (!this.inCheck) {
             let ksq = this.kingsquares[this.stm];
+            let oppAttacksBase = <i32>opposite(this.stm) << 7;
             if (this.stm == WHITE && ksq == E1) {
                 // Debug each condition individually
                 let c1 = this.pieceat[F1] == EMPTY;
-                let c2 = this.numattacks[BLACK][F1] == 0;
-                let c3 = this.numattacks[BLACK][G1] == 0;
+                let c2 = this.numattacks[oppAttacksBase | F1] == 0;
+                let c3 = this.numattacks[oppAttacksBase | G1] == 0;
                 let c4 = this.pieceat[G1] == EMPTY;
                 let c5 = this.pieceat[H1] == WR;
                 let c6 = (this.castlingRights & WHITE_CASTLE_K) != 0;
                 if (c1 && c2 && c3 && c4 && c5 && c6) {
-                    this.moveFrom[this.moveCount] = E1;
-                    this.moveTo[this.moveCount] = G1;
-                    this.moveMovingpiece[this.moveCount] = WK;
-                    this.moveCaptured[this.moveCount] = EMPTY;
-                    this.movePromoted[this.moveCount] = 0;
-                    this.moveMask[this.moveCount] = MASK_CASTLING;
-                    this.moveCount++;
+                    this.addmove(E1, G1, MASK_CASTLING);
                 }
-                if ((this.pieceat[D1] == EMPTY) && (this.numattacks[BLACK][D1] == 0) &&
-                    (this.numattacks[BLACK][C1] == 0) && (this.pieceat[C1] == EMPTY) &&
-                    (this.pieceat[B1] == EMPTY) && (this.pieceat[A1] == WR) && 
+                if ((this.pieceat[D1] == EMPTY) && (this.numattacks[oppAttacksBase | D1] == 0) &&
+                    (this.numattacks[oppAttacksBase | C1] == 0) && (this.pieceat[C1] == EMPTY) &&
+                    (this.pieceat[B1] == EMPTY) && (this.pieceat[A1] == WR) &&
                     (this.castlingRights & WHITE_CASTLE_Q)) {
-                    this.moveFrom[this.moveCount] = E1;
-                    this.moveTo[this.moveCount] = C1;
-                    this.moveMovingpiece[this.moveCount] = WK;
-                    this.moveCaptured[this.moveCount] = EMPTY;
-                    this.movePromoted[this.moveCount] = 0;
-                    this.moveMask[this.moveCount] = MASK_CASTLING;
-                    this.moveCount++;
+                    this.addmove(E1, C1, MASK_CASTLING);
                 }
             } else if (this.stm == BLACK && ksq == E8) {
-                if ((this.pieceat[F8] == EMPTY) && (this.numattacks[WHITE][F8] == 0) &&
-                    (this.numattacks[WHITE][G8] == 0) && (this.pieceat[G8] == EMPTY) &&
+                if ((this.pieceat[F8] == EMPTY) && (this.numattacks[oppAttacksBase | F8] == 0) &&
+                    (this.numattacks[oppAttacksBase | G8] == 0) && (this.pieceat[G8] == EMPTY) &&
                     (this.pieceat[H8] == BR) && (this.castlingRights & BLACK_CASTLE_K)) {
-                    this.moveFrom[this.moveCount] = E8;
-                    this.moveTo[this.moveCount] = G8;
-                    this.moveMovingpiece[this.moveCount] = BK;
-                    this.moveCaptured[this.moveCount] = EMPTY;
-                    this.movePromoted[this.moveCount] = 0;
-                    this.moveMask[this.moveCount] = MASK_CASTLING;
-                    this.moveCount++;
+                    this.addmove(E8, G8, MASK_CASTLING);
                 }
-                if ((this.pieceat[D8] == EMPTY) && (this.numattacks[WHITE][D8] == 0) &&
-                    (this.numattacks[WHITE][C8] == 0) && (this.pieceat[C8] == EMPTY) &&
-                    (this.pieceat[B8] == EMPTY) && (this.pieceat[A8] == BR) && 
+                if ((this.pieceat[D8] == EMPTY) && (this.numattacks[oppAttacksBase | D8] == 0) &&
+                    (this.numattacks[oppAttacksBase | C8] == 0) && (this.pieceat[C8] == EMPTY) &&
+                    (this.pieceat[B8] == EMPTY) && (this.pieceat[A8] == BR) &&
                     (this.castlingRights & BLACK_CASTLE_Q)) {
-                    this.moveFrom[this.moveCount] = E8;
-                    this.moveTo[this.moveCount] = C8;
-                    this.moveMovingpiece[this.moveCount] = BK;
-                    this.moveCaptured[this.moveCount] = EMPTY;
-                    this.movePromoted[this.moveCount] = 0;
-                    this.moveMask[this.moveCount] = MASK_CASTLING;
-                    this.moveCount++;
+                    this.addmove(E8, C8, MASK_CASTLING);
                 }
             }
         }
     }
 
     addSliderAttack(who: u8, piecetype: u8, from: i32, to: i32, direction: i32): void {
-        this.attacks[who][to] |= attackbit(piecetype);
-        this.numattacks[who][to]++;
+        let base = <i32>who << 7;
+        this.attacks[base | to] |= attackbit(piecetype);
+        this.numattacks[base | to]++;
 
         let oppSide = 1 - who;
         let enemyKingSq = this.kingsquares[oppSide];
@@ -590,8 +583,8 @@ export class Board {
         if (to == enemyKingSq) {
             let nextSq = to + direction;
             if (validSquare(nextSq)) {
-                this.attacks[who][nextSq] |= attackbit(piecetype);
-                this.numattacks[who][nextSq]++;
+                this.attacks[base | nextSq] |= attackbit(piecetype);
+                this.numattacks[base | nextSq]++;
             }
             this.kingschecks[oppSide]++;
 
@@ -599,7 +592,7 @@ export class Board {
             do {
                 sq = sq - direction;
                 if (!validSquare(sq)) break;
-                this.inchekValidSquares[oppSide][sq] = 1;
+                this.inchekValidSquares[(<i32>oppSide << 7) | sq] = 1;
             } while (sq != from);
             return;
         }
@@ -621,7 +614,7 @@ export class Board {
 
                 if (piecesinbetween == 0) {
                     if (pcolor(attackedPiece) == oppSide) {
-                        this.pinDirection[oppSide][to] = <i8>offset;
+                        this.pinDirection[(<i32>oppSide << 7) | to] = <i8>offset;
                     }
                 }
             }
@@ -635,7 +628,7 @@ export class Board {
         if (canxray) {
             let next = to + direction;
             while (validSquare(next)) {
-                this.numattacks[who][next]++;
+                this.numattacks[base | next]++;
                 if (this.pieceat[next] != EMPTY) break;
                 next = next + direction;
             }
@@ -643,7 +636,8 @@ export class Board {
     }
 
     makemoveIdx(idx: i32): bool {
-        return this.makemove(this.moveFrom[idx], this.moveTo[idx], this.movePromoted[idx]);
+        let base = this.historyPly << 8;
+        return this.makemove(this.moveFrom[base | idx], this.moveTo[base | idx], this.movePromoted[base | idx]);
     }
 
     makemove(from: i32, to: i32, promoted: u8): bool {
@@ -780,22 +774,14 @@ export class Board {
     perft(depth: i32): u64 {
         this.generateMoves();
         let nmoves = this.moveCount;
-        if (depth == 1) return nmoves;
-
-        let mFrom = new Int32Array(nmoves);
-        let mTo = new Int32Array(nmoves);
-        let mPromoted = new Uint8Array(nmoves);
-        for (let i = 0; i < nmoves; i++) {
-            mFrom[i] = this.moveFrom[i];
-            mTo[i] = this.moveTo[i];
-            mPromoted[i] = this.movePromoted[i];
-        }
+        if (depth == 1) return <u64>nmoves;
 
         let nodes: u64 = 0;
+        let base = this.historyPly << 8;
         for (let i = 0; i < nmoves; i++) {
-            this.makemove(mFrom[i], mTo[i], mPromoted[i]);
-            let childNodes = this.perft(depth - 1);
-            nodes += childNodes;
+            let idx = base | i;
+            this.makemove(this.moveFrom[idx], this.moveTo[idx], this.movePromoted[idx]);
+            nodes += this.perft(depth - 1);
             this.undomove();
         }
         return nodes;
@@ -805,18 +791,11 @@ export class Board {
         this.generateMoves();
         let nmoves = this.moveCount;
 
-        let mFrom = new Int32Array(nmoves);
-        let mTo = new Int32Array(nmoves);
-        let mPromoted = new Uint8Array(nmoves);
-        for (let i = 0; i < nmoves; i++) {
-            mFrom[i] = this.moveFrom[i];
-            mTo[i] = this.moveTo[i];
-            mPromoted[i] = this.movePromoted[i];
-        }
-
         let nodes: u64 = 0;
+        let base = this.historyPly << 8;
         for (let i = 0; i < nmoves; i++) {
-            this.makemove(mFrom[i], mTo[i], mPromoted[i]);
+            let idx = base | i;
+            this.makemove(this.moveFrom[idx], this.moveTo[idx], this.movePromoted[idx]);
             let movenodes = this.perft(depth - 1);
             nodes += movenodes;
             this.undomove();
@@ -832,7 +811,7 @@ export class Board {
     makeMoveAndGenerate(from: i32, to: i32): i32 {
         // Find move index
         for (let i = 0; i < this.moveCount; i++) {
-            if (this.moveFrom[i] == from && this.moveTo[i] == to) {
+            if (this.getMoveFrom(i) == from && this.getMoveTo(i) == to) {
                 let made = this.makemoveIdx(i);
                 if (!made) return -1; // Move failed
                 this.generateMoves();
@@ -846,7 +825,7 @@ export class Board {
 
     debugMoveAndGenerate(from: i32, to: i32): i32 {
         for (let i = 0; i < this.moveCount; i++) {
-            if (this.moveFrom[i] == from && this.moveTo[i] == to) {
+            if (this.getMoveFrom(i) == from && this.getMoveTo(i) == to) {
                 this.makemoveIdx(i);
                 // Debug: print some board state
                 let kingSq = this.kingsquares[this.stm];
@@ -861,11 +840,11 @@ export class Board {
     }
 
     getMoveFrom(idx: i32): i32 {
-        return this.moveFrom[idx];
+        return this.moveFrom[(this.historyPly << 8) | idx];
     }
 
     getMoveTo(idx: i32): i32 {
-        return this.moveTo[idx];
+        return this.moveTo[(this.historyPly << 8) | idx];
     }
 
     loadFEN(fen: string): void {
@@ -879,27 +858,27 @@ export class Board {
         let fen50 = fenParts[4];
         let fenMn = fenParts[5];
 
-        let file = FILE_A;
-        let rank = 7;
+        let f = FILE_A;
+        let r = 7;
 
         for (let i = 0; i < fenBoard.length; i++) {
             let c = fenBoard.charCodeAt(i);
             if (c == 47) { // '/'
-                rank--;
-                file = FILE_A;
+                r--;
+                f = FILE_A;
                 continue;
             }
             if (c >= 49 && c <= 56) { // '1'-'8'
-                file += c - 48;
+                f += c - 48;
                 continue;
             }
 
             let piece = charToPiece(String.fromCharCode(c));
             if (piece != EMPTY) {
-                let sq = square(file, rank);
+                let sq = square(f, r);
                 let color = <u8>pcolor(piece);
                 this.addpiece(color, piece, sq);
-                file++;
+                f++;
             }
         }
 

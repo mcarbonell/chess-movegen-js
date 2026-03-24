@@ -21,15 +21,16 @@ export function getMoveCount(board: Board): i32 {
 }
 
 export function getMoveFrom(board: Board, idx: i32): i32 {
-  return board.moveFrom[idx];
+  return board.getMoveFrom(idx);
 }
 
 export function getMoveTo(board: Board, idx: i32): i32 {
-  return board.moveTo[idx];
+  return board.getMoveTo(idx);
 }
 
 export function getMovePromoted(board: Board, idx: i32): i32 {
-  return board.movePromoted[idx];
+  let base = board.historyPly << 8;
+  return board.movePromoted[base | idx];
 }
 
 export function makemove(board: Board, from: i32, to: i32, promoted: i32): void {
@@ -37,11 +38,11 @@ export function makemove(board: Board, from: i32, to: i32, promoted: i32): void 
 }
 
 export function getPinDirection(board: Board, side: i32, sq: i32): i32 {
-  return board.pinDirection[side][sq];
+  return board.pinDirection[(side << 7) | sq];
 }
 
 export function getNumAttacks(board: Board, side: i32, sq: i32): i32 {
-  return board.numattacks[side][sq];
+  return board.numattacks[(side << 7) | sq];
 }
 
 export function undomove(board: Board): void {
@@ -53,7 +54,7 @@ export function getPieceAt(board: Board, sq: i32): i32 {
 }
 
 export function getPieceSquare(board: Board, side: i32, idx: i32): i32 {
-  return board.piecesquares[side][idx];
+  return board.piecesquares[(side << 4) | idx];
 }
 
 export function getKingSquare(board: Board, side: i32): i32 {
