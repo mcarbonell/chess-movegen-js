@@ -26,7 +26,7 @@ if (typeof performance === 'undefined') {
 // Parse command line arguments
 const args = process.argv.slice(2);
 const options = {
-    generator: 'both', // 'x88', 'bb', or 'both'
+    generator: 'both', // 'x88', 'bb', 'as' or 'both' (both will test all three now)
     position: null,    // null = all positions, number = specific position
     maxDepth: 6,       // Maximum depth to test
     quick: false       // Quick mode (depths 1-4 only)
@@ -50,7 +50,7 @@ Usage:
   node tests/perft-test.js [options]
 
 Options:
-  --generator <x88|bb|both>   Select generator to test (default: both)
+  --generator <x88|bb|as|both>   Select generator to test (default: both)
   --position <n>              Test only position n (default: all)
   --depth <n>                 Test up to depth n (default: 6)
   --quick                     Quick test mode (depths 1-4)
@@ -58,7 +58,7 @@ Options:
 
 Examples:
   node tests/perft-test.js --quick
-  node tests/perft-test.js --generator x88 --depth 5
+  node tests/perft-test.js --generator as --depth 5
   node tests/perft-test.js --position 1 --generator bb
         `);
         process.exit(0);
@@ -281,6 +281,17 @@ async function main() {
                 testGenerator('Bitboard Generator', BBBoard, positionsToTest);
             } catch (error) {
                 console.log(`${colors.yellow}Warning: Could not load bitboard generator${colors.reset}`);
+                console.log(`${colors.gray}${error.message}${colors.reset}\n`);
+            }
+        }
+
+        // Import AssemblyScript board
+        if (options.generator === 'as' || options.generator === 'both') {
+            try {
+                const { ASBoard } = require('./as-node.js');
+                testGenerator('AssemblyScript Generator', ASBoard, positionsToTest);
+            } catch (error) {
+                console.log(`${colors.yellow}Warning: Could not load AssemblyScript generator${colors.reset}`);
                 console.log(`${colors.gray}${error.message}${colors.reset}\n`);
             }
         }

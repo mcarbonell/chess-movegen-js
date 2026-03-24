@@ -138,6 +138,10 @@ export class Board {
     movepiece(color: u8, piece: u8, from: i32, to: i32): void {
         this.pieceat[to] = piece;
         this.pieceat[from] = EMPTY;
+        if (ptype(piece) == KING) {
+            this.kingsquares[color] = <i8>to;
+            return;
+        }
         for (let i = 0; i < 16; i++) {
             if (this.piecesquares[color][i] == from) {
                 this.piecesquares[color][i] = <i8>to;
@@ -584,8 +588,11 @@ export class Board {
         let attackedPiece = this.pieceat[to];
 
         if (to == enemyKingSq) {
-            this.attacks[who][to + direction] |= attackbit(piecetype);
-            this.numattacks[who][to + direction]++;
+            let nextSq = to + direction;
+            if (validSquare(nextSq)) {
+                this.attacks[who][nextSq] |= attackbit(piecetype);
+                this.numattacks[who][nextSq]++;
+            }
             this.kingschecks[oppSide]++;
 
             let sq = to;
@@ -638,10 +645,10 @@ export class Board {
     }
 
     makemoveIdx(idx: i32): bool {
-        let from = this.moveFrom[idx];
-        let to = this.moveTo[idx];
-        let promoted = this.movePromoted[idx];
+        return this.makemove(this.moveFrom[idx], this.moveTo[idx], this.movePromoted[idx]);
+    }
 
+    makemove(from: i32, to: i32, promoted: u8): bool {
         let captured = this.pieceat[to];
         let movingpiece = this.pieceat[from];
 
@@ -727,11 +734,11 @@ export class Board {
         this.stm = opposite(this.stm);
         let sign = (this.stm == WHITE) ? 1 : -1;
 
-        let movingpiece = this.pieceat[to];
-
         if (promoted != 0) {
             this.pieceat[to] = (this.stm == WHITE) ? WP : BP;
         }
+
+        let movingpiece = this.pieceat[to];
 
         this.movepiece(this.stm, movingpiece, to, from);
 
@@ -771,9 +778,18 @@ export class Board {
         let nmoves = this.moveCount;
         if (depth == 1) return nmoves;
 
+        let mFrom = new Int32Array(nmoves);
+        let mTo = new Int32Array(nmoves);
+        let mPromoted = new Uint8Array(nmoves);
+        for (let i = 0; i < nmoves; i++) {
+            mFrom[i] = this.moveFrom[i];
+            mTo[i] = this.moveTo[i];
+            mPromoted[i] = this.movePromoted[i];
+        }
+
         let nodes: u64 = 0;
         for (let i = 0; i < nmoves; i++) {
-            this.makemoveIdx(i);
+            this.makemove(mFrom[i], mTo[i], mPromoted[i]);
             let childNodes = this.perft(depth - 1);
             nodes += childNodes;
             this.undomove();
@@ -784,10 +800,19 @@ export class Board {
     divide(depth: i32): u64 {
         this.generateMoves();
         let nmoves = this.moveCount;
-        
+
+        let mFrom = new Int32Array(nmoves);
+        let mTo = new Int32Array(nmoves);
+        let mPromoted = new Uint8Array(nmoves);
+        for (let i = 0; i < nmoves; i++) {
+            mFrom[i] = this.moveFrom[i];
+            mTo[i] = this.moveTo[i];
+            mPromoted[i] = this.movePromoted[i];
+        }
+
         let nodes: u64 = 0;
         for (let i = 0; i < nmoves; i++) {
-            this.makemoveIdx(i);
+            this.makemove(mFrom[i], mTo[i], mPromoted[i]);
             let movenodes = this.perft(depth - 1);
             nodes += movenodes;
             this.undomove();
