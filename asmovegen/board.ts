@@ -175,7 +175,7 @@ export class Board {
         if (pindir != 0) {
             let diff = from - to;
             let index = diff + 119;
-            let movedirection = (index >= 0 && index < 128) ? RAYS[index] : 0;
+            let movedirection = (index >= 0 && index < 239) ? RAYS[index] : 0;
             if (absI32(pindir) != absI32(movedirection)) {
                 return;
             }
@@ -606,7 +606,7 @@ export class Board {
 
         let diff = from - enemyKingSq;
         let index = diff + 119;
-        if (index >= 0 && index < 128) {
+        if (index >= 0 && index < 239) {
             let offset = RAYS[index];
             if (direction == offset) {
                 let piecesinbetween = 0;
@@ -636,9 +636,7 @@ export class Board {
             let next = to + direction;
             while (validSquare(next)) {
                 this.numattacks[who][next]++;
-                if (this.pieceat[next] != EMPTY) {
-                    break;
-                }
+                if (this.pieceat[next] != EMPTY) break;
                 next = next + direction;
             }
         }
@@ -658,7 +656,8 @@ export class Board {
         let isPawnMove = movingpiece == WP || movingpiece == BP;
         let isPawnPush = !isCapture && isPawnMove && absI32(to - from) == 32;
         let isPromotion = isPawnMove && (rank(to) == RANK_8 || rank(to) == RANK_1);
-        let isEnPassant = isPawnMove && to == this.enpassantSquare;
+        let savedEP = this.enpassantSquare;
+        let isEnPassant = isPawnMove && to == savedEP;
 
         this.movehalfnumber++;
         this.movenumber = this.movehalfnumber / 2;
@@ -713,7 +712,7 @@ export class Board {
         }
 
         if (isEnPassant) {
-            let sqPawn = (this.stm == WHITE) ? to - 16 : to + 16;
+            let sqPawn = (this.stm == WHITE) ? savedEP - 16 : savedEP + 16;
             this.removepiece(opposite(this.stm), sqPawn);
         }
 
@@ -734,11 +733,15 @@ export class Board {
         this.stm = opposite(this.stm);
         let sign = (this.stm == WHITE) ? 1 : -1;
 
+        let movingpiece: u8;
         if (promoted != 0) {
-            this.pieceat[to] = (this.stm == WHITE) ? WP : BP;
+            // Undo promotion: pieceat[to] is the promoted piece, restore pawn
+            let pawn: u8 = (this.stm == WHITE) ? WP : BP;
+            this.pieceat[to] = pawn;
+            movingpiece = pawn;
+        } else {
+            movingpiece = this.pieceat[to];
         }
-
-        let movingpiece = this.pieceat[to];
 
         this.movepiece(this.stm, movingpiece, to, from);
 
@@ -751,7 +754,7 @@ export class Board {
         this.enpassantSquare = this.historyEP[ply];
 
         if (to == this.enpassantSquare && ptype(movingpiece) == PAWN) {
-            this.addpiece(opposite(this.stm), (this.stm == WHITE) ? WP : BP, this.enpassantSquare - (16 * sign));
+            this.addpiece(opposite(this.stm), (this.stm == WHITE) ? BP : WP, to - (16 * sign));
         }
 
         if (from == E1 && to == G1 && movingpiece == WK) {
@@ -766,6 +769,7 @@ export class Board {
         if (from == E8 && to == C8 && movingpiece == BK) {
             this.movepiece(this.stm, BR, D8, A8);
         }
+
 
         this.movehalfnumber--;
         this.movenumber = this.movehalfnumber / 2;
