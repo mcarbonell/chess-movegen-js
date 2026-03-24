@@ -1,5 +1,5 @@
 {
-  "name": "chess-movegen-js",
+  "name": "chess-movegen",
   "version": "1.0.4",
   "description": "JavaScript chess move generator with strictly legal moves. x88 board representation. Integrated check/checkmate/stalemate detection. Tactical analysis. 5.6M NPS performance.",
   "main": "js/x88.js",
@@ -42,5 +42,13 @@
     "README.md",
     "README.es.md",
     "LICENSE"
-  ]
+  ],
+  "directories": {
+    "test": "tests"
+  },
+  "type": "commonjs",
+  "devDependencies": {
+    "@assemblyscript/loader": "^0.28.10",
+    "assemblyscript": "^0.28.10"
+  }
 }
