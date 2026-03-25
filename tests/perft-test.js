@@ -26,7 +26,7 @@ if (typeof performance === 'undefined') {
 // Parse command line arguments
 const args = process.argv.slice(2);
 const options = {
-    generator: 'both', // 'x88', 'bb', 'as', 'rust' or 'both' (both will test all four now)
+    generator: 'all', // 'x88', 'bb', 'as', 'rust' or 'all'
     position: null,    // null = all positions, number = specific position
     maxDepth: 6,       // Maximum depth to test
     quick: false       // Quick mode (depths 1-4 only)
@@ -50,7 +50,7 @@ Usage:
   node tests/perft-test.js [options]
 
 Options:
-  --generator <x88|bb|as|rust|both>   Select generator to test (default: both)
+  --generator <x88|bb|as|rust-x88|rust-bb|all>   Select generator to test (default: all)
   --position <n>              Test only position n (default: all)
   --depth <n>                 Test up to depth n (default: 6)
   --quick                     Quick test mode (depths 1-4)
@@ -293,16 +293,16 @@ async function main() {
     // Load the generators
     try {
         // Import x88 board
-        if (options.generator === 'x88' || options.generator === 'both') {
+        if (options.generator === 'x88' || options.generator === 'all') {
             const { Board: X88Board } = require('./x88-node.js');
-            testGenerator('x88 Generator', X88Board, positionsToTest);
+            testGenerator('JS x88 Generator', X88Board, positionsToTest);
         }
 
         // Import bitboard
-        if (options.generator === 'bb' || options.generator === 'both') {
+        if (options.generator === 'bb' || options.generator === 'all') {
             try {
                 const { BBBoard } = require('./bitboard-node.js');
-                testGenerator('Bitboard Generator', BBBoard, positionsToTest);
+                testGenerator('JS Bitboard Generator', BBBoard, positionsToTest);
             } catch (error) {
                 console.log(`${colors.yellow}Warning: Could not load bitboard generator${colors.reset}`);
                 console.log(`${colors.gray}${error.message}${colors.reset}\n`);
@@ -310,29 +310,18 @@ async function main() {
         }
 
         // Import AssemblyScript board
-        if (options.generator === 'as' || options.generator === 'both') {
+        if (options.generator === 'as' || options.generator === 'all') {
             try {
                 const { ASBoard } = require('./as-node.js');
-                testGenerator('AssemblyScript Generator', ASBoard, positionsToTest);
+                testGenerator('AssemblyScript x88 Generator ', ASBoard, positionsToTest);
             } catch (error) {
                 console.log(`${colors.yellow}Warning: Could not load AssemblyScript generator${colors.reset}`);
                 console.log(`${colors.gray}${error.message}${colors.reset}\n`);
             }
         }
 
-        // Import Rust board
-        if (options.generator === 'rust' || options.generator === 'both') {
-            try {
-                const { RustBoard } = require('./rust-node.js');
-                testGenerator('Rust X88 Generator', RustBoard, positionsToTest);
-            } catch (error) {
-                console.log(`${colors.yellow}Warning: Could not load Rust generator${colors.reset}`);
-                console.log(`${colors.gray}${error.message}${colors.reset}\n`);
-            }
-        }
-
         // Import Rust X88 board
-        if (options.generator === 'rust-x88' || options.generator === 'both') {
+        if (options.generator === 'rust-x88' || options.generator === 'all') {
             try {
                 const { RustBoard } = require('./rust-node.js');
                 const RustX88Board = class extends RustBoard {
@@ -346,7 +335,7 @@ async function main() {
         }
 
         // Import Rust Bitboard board
-        if (options.generator === 'rust-bb' || options.generator === 'both') {
+        if (options.generator === 'rust-bb' || options.generator === 'all') {
             try {
                 const { RustBoard } = require('./rust-node.js');
                 const RustBBBoard = class extends RustBoard {

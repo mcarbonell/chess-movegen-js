@@ -253,7 +253,7 @@ node tests/perft-test.js --generator x88 --depth 6
 node tests/perft-test.js [options]
 
 Options:
-  --generator <x88|bb|both>   Select generator to test (default: both)
+  --generator <x88|bb|as|rust-x88|rust-bb|all>   Select generator to test (default: all)
   --position <n>              Test only position n (default: all)
   --depth <n>                 Test up to depth n (default: 6)
   --quick                     Quick test mode (depths 1-4)

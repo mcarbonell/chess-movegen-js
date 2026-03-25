@@ -457,7 +457,7 @@ pub fn knight_attacks(sq: usize) -> u64 {
     let mut a = ((b << 17) & NOT_A_FILE) | ((b << 15) & NOT_H_FILE);
     a |= ((b << 10) & NOT_AB_FILE) | ((b << 6) & NOT_GH_FILE);
     a |= ((b >> 6) & NOT_AB_FILE) | ((b >> 10) & NOT_GH_FILE);
-    a |= ((b >> 15) & NOT_H_FILE) | ((b >> 17) & NOT_A_FILE);
+    a |= ((b >> 15) & NOT_A_FILE) | ((b >> 17) & NOT_H_FILE);
     a
 }
 #[inline(always)]
