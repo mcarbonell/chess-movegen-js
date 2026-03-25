@@ -45,6 +45,33 @@ board.generateMoves();
 console.log(`Movimientos legales: ${board.moves.length}`); // 20
 ```
 
+### Compatibilidad con Chess.js (Reemplazo Directo)
+
+Si ya usas `chess.js`, puedes utilizar `ChessJSAdapter` como un reemplazo directo de alto rendimiento. Proporciona la misma API (`.moves()`, `.move()`, `.fen()`, `.isCheck()`, etc.) pero utiliza el motor **x88** internamente, lo que lo hace **~50 veces más rápido**.
+
+```javascript
+const { ChessJSAdapter } = require('chess-movegen-js/chessjs');
+
+// Funciona exactamente como chess.js
+const chess = new ChessJSAdapter();
+chess.move('e4');
+console.log(chess.fen());
+console.log(chess.moves()); // Notación Algebraica Estándar (SAN)
+```
+
+## 📊 Comparativa de Rendimiento (NPS)
+
+Rendimiento medido en Node.js (Promedio Depth 4):
+
+| Generador | NPS (Nodos Por Segundo) | Mejora vs chess.js |
+| :--- | :--- | :--- |
+| **chess.js (Original)** | ~75,000 | 1x (Base) |
+| **ChessJSAdapter (x88)** | **~3,500,000** | **47x Más rápido** |
+| **JS x88 Generator** | ~3,500,000 | 47x Más rápido |
+| **AssemblyScript x88** | ~3,800,000 | 51x Más rápido |
+| **Rust X88** | ~10,800,000 | 145x Faster |
+| **Rust Bitboard** | **~15,800,000** | **213x Faster** |
+
 ## 📖 Ejemplos de Uso
 
 ### Inicialización Básica

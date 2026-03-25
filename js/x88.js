@@ -1491,6 +1491,14 @@ class Board {
         this.makemove_old(move.from, move.to, move.promotedpiece)
     }
 
+    squareToStr(sq) {
+        return squareToStr(sq)
+    }
+
+    squareFromStr(str) {
+        return squareFromStr(str)
+    }
+
     debug_tableAttacks(side) {
 
         let attackedsquares = []

@@ -3,11 +3,25 @@
   "version": "1.0.4",
   "description": "JavaScript chess move generator with strictly legal moves. x88 board representation. Integrated check/checkmate/stalemate detection. Tactical analysis. 5.6M NPS performance.",
   "main": "js/x88.js",
+  "exports": {
+    ".": "./js/x88.js",
+    "./chessjs": "./js/chessjs-adapter.js",
+    "./bitboard": "./js/bitboard.js"
+  },
+  "types": "./js/x88.d.ts",
+  "files": [
+    "js/x88.js",
+    "README.md",
+    "README.es.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "node tests/perft-test.js --quick",
     "test:full": "node tests/perft-test.js",
     "test:x88": "node tests/perft-test.js --generator x88",
     "test:bb": "node tests/perft-test.js --generator bb",
+    "test:perf": "node tests/perft-test.js --quick --generator all",
+    "test:adapter": "node tests/chessjs-adapter-test.js",
     "prepublishOnly": "npm test"
   },
   "repository": {
@@ -37,18 +51,13 @@
   "engines": {
     "node": ">=14.0.0"
   },
-  "files": [
-    "js/x88.js",
-    "README.md",
-    "README.es.md",
-    "LICENSE"
-  ],
   "directories": {
     "test": "tests"
   },
   "type": "commonjs",
   "devDependencies": {
     "@assemblyscript/loader": "^0.28.10",
-    "assemblyscript": "^0.28.10"
+    "assemblyscript": "^0.28.10",
+    "chess.js": "^1.4.0"
   }
 }

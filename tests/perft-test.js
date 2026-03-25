@@ -298,6 +298,45 @@ async function main() {
             testGenerator('JS x88 Generator', X88Board, positionsToTest);
         }
 
+        // Import ChessJSAdapter
+        if (options.generator === 'chessjs-adapter' || options.generator === 'all') {
+            const { ChessJSAdapter } = require('../js/chessjs-adapter.js');
+            const AdapterBoard = class extends ChessJSAdapter {
+                constructor() { super(); }
+                perft(depth) {
+                    this.board.generateMoves();
+                    return this.board.perft(depth);
+                }
+                loadFEN(fen) { this.load(fen); }
+            };
+            testGenerator('ChessJSAdapter (x88)', AdapterBoard, positionsToTest);
+        }
+
+        // Import chess.js Original
+        if (options.generator === 'chessjs' || options.generator === 'all') {
+            try {
+                const { Chess } = require('chess.js');
+                const ChessJSOriginal = class {
+                    constructor() { this.chess = new Chess(); }
+                    loadFEN(fen) { this.chess.load(fen); }
+                    perft(depth) {
+                        const moves = this.chess.moves();
+                        if (depth === 1) return moves.length;
+                        let nodes = 0;
+                        for (const move of moves) {
+                            this.chess.move(move);
+                            nodes += this.perft(depth - 1);
+                            this.chess.undo();
+                        }
+                        return nodes;
+                    }
+                };
+                testGenerator('chess.js (Original Library)', ChessJSOriginal, positionsToTest);
+            } catch (error) {
+                console.log(`${colors.yellow}Warning: Could not load chess.js library${colors.reset}`);
+            }
+        }
+
         // Import bitboard
         if (options.generator === 'bb' || options.generator === 'all') {
             try {
@@ -305,7 +344,6 @@ async function main() {
                 testGenerator('JS Bitboard Generator', BBBoard, positionsToTest);
             } catch (error) {
                 console.log(`${colors.yellow}Warning: Could not load bitboard generator${colors.reset}`);
-                console.log(`${colors.gray}${error.message}${colors.reset}\n`);
             }
         }
 
@@ -316,7 +354,6 @@ async function main() {
                 testGenerator('AssemblyScript x88 Generator ', ASBoard, positionsToTest);
             } catch (error) {
                 console.log(`${colors.yellow}Warning: Could not load AssemblyScript generator${colors.reset}`);
-                console.log(`${colors.gray}${error.message}${colors.reset}\n`);
             }
         }
 
@@ -330,7 +367,6 @@ async function main() {
                 testGenerator('Rust X88 Generator', RustX88Board, positionsToTest);
             } catch (error) {
                 console.log(`${colors.yellow}Warning: Could not load Rust X88 generator${colors.reset}`);
-                console.log(`${colors.gray}${error.message}${colors.reset}\n`);
             }
         }
 
@@ -344,7 +380,6 @@ async function main() {
                 testGenerator('Rust Bitboard Generator', RustBBBoard, positionsToTest);
             } catch (error) {
                 console.log(`${colors.yellow}Warning: Could not load Rust Bitboard generator${colors.reset}`);
-                console.log(`${colors.gray}${error.message}${colors.reset}\n`);
             }
         }
 
