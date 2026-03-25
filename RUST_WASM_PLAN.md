@@ -20,10 +20,6 @@ movegen/
 │   ├── x88.js           # Reference implementation (correct, well-tested)
 │   ├── bitboard.js      # JS bitboard to port (uses BigInt)
 │   └── magic-tables.js  # Precomputed magic bitboard tables (BigInt arrays)
-├── chess-bitboards-wasm/  # Existing Rust/WASM skeleton (wasm-pack configured)
-│   ├── src/lib.rs
-│   ├── Cargo.toml
-│   └── pkg/             # Compiled output
 ├── tests/
 │   ├── perft-test.js    # Test runner (supports --generator as|x88|bb|both)
 │   ├── perft-positions.js
