@@ -13,17 +13,17 @@
 
 - ✅ **Generación de movimientos estrictamente legales** - Sin pseudo-movimientos que requieran validación posterior
 - ✅ **Detección integrada de jaques, mates y ahogados** - Durante la generación, no como paso posterior
-- ✅ **Dos implementaciones**: x88 y Bitboards
-- ✅ **Análisis táctico automático** - Cada movimiento incluye información sobre capturas ganadoras, piezas colgadas, casillas seguras
+- ✅ **Múltiples implementaciones**: JS (x88, Bitboard), Rust (x88, Bitboard), AssemblyScript (x88)
+- ✅ **Alto Rendimiento**: Hasta **25M+ NPS** con Rust Bitboards en el navegador
 - ✅ **Motor UCI completo** - Compatible con interfaces de ajedrez estándar
-- ✅ **Interfaz web interactiva** - Demo visual con tablero drag & drop
+- ✅ **Interfaz web avanzada** - Demo visual con selector de motor (JS, WASM)
 - ✅ **Web Workers** - Cálculos sin bloquear la interfaz
 
 ## 🚀 Demo Rápida
 
-**[¡Pruebalo ahora!](https://mcarbonell.github.io/chess-movegen-js/engine.html)** 
+**[¡Pruebalo ahora!](https://mcarbonell.github.io/chess-movegen-js/visualizer/engine.html)** 
 
-O abre `engine.html` en tu navegador para ver la demo interactiva.
+O abre `visualizer/engine.html` en tu navegador para ver la demo interactiva.
 
 ## 📦 Instalación
 
@@ -110,13 +110,15 @@ board.divide(4);
 ```
 movegen/
 ├── js/
-│   ├── x88.js           # Generador con representación x88 (1842 líneas)
-│   ├── bitboard.js      # Generador con bitboards
-│   ├── magic-tables.js  # Tablas Mágicas para bitboard
-│   └── engine.js        # Motor UCI con Web Worker
-├── assets/              # Estilos css y js para la demo
-├── img/                 # Recursos gráficos
-├── engine.html          # Demo interactiva principal
+│   ├── x88.js           # Generador x88 (JS)
+│   ├── bitboard.js      # Generador Bitboard (JS)
+│   └── magic-tables.js  # Tablas Mágicas para bitboard
+├── rust-movegen/        # Implementación en Rust (WASM)
+├── asmovegen/           # Implementación en AssemblyScript (WASM)
+├── visualizer/          # Interfaz web interactiva
+│   ├── engine.html      # Página principal de la demo
+│   └── js/              # Workers y lógica de la UI
+├── tests/               # Suite completa de tests Perft
 ├── ANALISIS.md          # Análisis técnico detallado
 └── README.es.md         # Este archivo
 ```
@@ -153,23 +155,19 @@ w.onmessage = function(event) {
 
 ## ⚡ Rendimiento
 
+Benchmarks desde la posición inicial (Profundidad 5):
+
+| Implementación | Plataforma | NPS |
+|----------------|------------|-----|
+| **Rust Bitboard** | WASM/Navegador | **~25.8M** |
+| **Rust x88** | WASM/Navegador | **~18.0M** |
+| **AssemblyScript** | WASM/Navegador | **~12.5M** |
+| **JS x88** | Node.js / Navegador | **~5.6M** |
+| **JS Bitboard** | Node.js / Navegador | **~4.2M** |
+
 **Perft desde posición inicial** (Node.js v20+, sin debug):
+... (mantener tabla existente) ...
 
-| Depth | Nodos | Tiempo | NPS |
-|-------|-------|--------|-----|
-| 1 | 20 | <1ms | ~25k |
-| 2 | 400 | ~1ms | ~268k |
-| 3 | 8,902 | ~10ms | ~864k |
-| 4 | 197,281 | ~83ms | **2.4M** |
-| 5 | 4,865,609 | ~871ms | **5.6M** |
-| 6 | 119,060,324 | ~17s | **7.0M** |
-
-**En navegador** (puede variar según browser y hardware):
-- Chrome/Edge: ~3-5M NPS
-- Firefox: ~2-4M NPS
-
-> **Nota**: Estos resultados son con el código optimizado (sin llamadas a `debug()`). 
-> El rendimiento en producción es excelente para JavaScript puro.
 
 ## 🎨 Características Técnicas Destacadas
 

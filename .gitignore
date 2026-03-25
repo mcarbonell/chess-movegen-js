@@ -51,3 +51,6 @@ Cargo.lock
 pkg/
 *.wasm
 *.wasm.d.ts
+
+# Web debug
+ai-eyes/

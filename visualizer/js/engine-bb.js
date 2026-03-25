@@ -3,10 +3,11 @@
 console.clear()
 
 // Load board implementation first (contains all const definitions)
-importScripts('x88.js')
-// importScripts('bitboard.js')  // Alternative: use bitboard instead
+importScripts('../../js/x88.js')
+importScripts('../../js/magic-tables.js')
+importScripts('../../js/bitboard.js')
 
-// All constants, functions, and classes are now defined in x88.js
+// All constants, functions, and classes are now defined in bitboard.js
 
 // Engine-specific constants
 const startpos = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -50,21 +51,11 @@ class Node {
 }
 // total 10 bytes
 
-// Node + move = 6 + 10 = 16 bytes
-// En 4 Gigas de RAM, nos da 268.435.456 nodos
-// hasta llenar la memoria
-// a 100M nps,    2,7 segundos
-// a  10M nps,   27 segundos
-// a   1M nps,  268 segundos, 4 minutos y medio
-// a 100k nps, 2680 segundos, 45 minutos
-// a  10k nps,    7 horas y media
-
 class UCIChessEngine {
 
-    usebb = false
-    board = (this.usebb) ? new BBBoard() : new Board()
-    // board = new BBBoard()
-    board = Object.seal(this.board)
+    usebb = true
+    board = new BBBoard()
+    // board = Object.seal(this.board)
 
     constructor() {
         // output('Engine constructor');
@@ -295,7 +286,7 @@ onmessage = function (event) {
             if (profile) console.profile();
             // doSomeVeryExpensiveWork();
             var d = performance.now()
-            var result = engine.perft(depth)
+            var result = Number(engine.perft(depth))
             var d2 = performance.now()
             if (profile) console.profileEnd();
 

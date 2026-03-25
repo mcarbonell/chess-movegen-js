@@ -9,6 +9,8 @@
     <meta name="generator" content="">
     <title>Chess Move Generator - Interactive Demo</title>
 
+    <script src="js/client-snippet.js"></script>
+
     <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
         integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous" />
 
@@ -112,6 +114,18 @@
                         <button class="btn btn-sm btn-outline-primary" onclick="engineCommand('perft 6')">Perft
                             6</button>
                     </div>
+                </div>
+
+                <!-- Engine Selector -->
+                <div class="mt-2">
+                    <label for="engineSelect" class="form-label">Engine:</label>
+                    <select class="form-select form-select-sm" id="engineSelect" onchange="changeEngine()">
+                        <option value="js/engine.js" data-type="classic">JS x88</option>
+                        <option value="js/engine-bb.js" data-type="classic">JS Bitboard</option>
+                        <option value="js/engine-as.js" data-type="module">AssemblyScript x88</option>
+                        <option value="js/engine-rust-x88.js" data-type="classic">Rust x88</option>
+                        <option value="js/engine-rust-bb.js" data-type="classic">Rust Bitboard</option>
+                    </select>
                 </div>
 
                 <!-- Test Positions -->
@@ -243,7 +257,15 @@
 
         var analisisMode = false;
 
-        function initEngine() {
+        function changeEngine() {
+            var select = document.getElementById("engineSelect");
+            var selectedEngine = select.value;
+            var engineType = select.options[select.selectedIndex].getAttribute("data-type");
+            destroyEngine();
+            initEngine(selectedEngine, engineType);
+        }
+
+        function initEngine(enginePath = "js/engine.js", engineType = "classic") {
 
             let type = ''
 
@@ -253,9 +275,13 @@
             }
 
             if (typeof (w) == "undefined") {
-                // output("Requesting engine")
-                w = new Worker("js/engine.js");
+                // output("Requesting engine: " + enginePath)
+                let workerOptions = engineType === "module" ? { type: "module" } : {};
+                w = new Worker(enginePath, workerOptions);
                 w.postMessage('uci');
+                if (game && game.fen()) {
+                    w.postMessage('position fen ' + game.fen());
+                }
             }
 
             w.onmessage = function (event) {
@@ -447,14 +473,12 @@
             return "OK";
         }
 
-        initEngine();
-
-
-
         var game = new Chess()
         var $status = $('#status')
         var $fen = $('#fen')
         var $pgn = $('#pgn')
+
+        initEngine();
 
         var whiteSquareGrey = '#a9a9a9'
         var blackSquareGrey = '#696969'

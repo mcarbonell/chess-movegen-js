@@ -19,11 +19,11 @@ export async function instantiate(module, imports = {}) {
   const adaptedExports = Object.setPrototypeOf({
     createBoard() {
       // asmovegen/export-board/createBoard() => asmovegen/board/Board
-      return __liftRecord5(exports.createBoard() >>> 0);
+      return exports.createBoard() >>> 0;
     },
     loadFEN(board, fen) {
       // asmovegen/export-board/loadFEN(asmovegen/board/Board, ~lib/string/String) => void
-      board = __retain(__lowerRecord5(board) || __notnull());
+      board = board || __notnull();
       fen = __lowerString(fen) || __notnull();
       try {
         exports.loadFEN(board, fen);
@@ -33,7 +33,7 @@ export async function instantiate(module, imports = {}) {
     },
     perft(board, depth) {
       // asmovegen/export-board/perft(asmovegen/board/Board, i32) => u64
-      board = __lowerRecord5(board) || __notnull();
+      board = board || __notnull();
       return BigInt.asUintN(64, exports.perft(board, depth));
     },
   }, exports);
