@@ -12,11 +12,11 @@
 ## 🎯 Características Principales
 
 - ✅ **Generación de movimientos estrictamente legales** - Sin pseudo-movimientos que requieran validación posterior
-- ✅ **Detección integrada de jaques, mates y ahogados** - Durante la generación, no como paso posterior
-- ✅ **Múltiples implementaciones**: JS (x88, Bitboard), Rust (x88, Bitboard), AssemblyScript (x88)
+- ✅ **Precisión Perft al 100%** - Todas las versiones verificadas con suites de pruebas estándar
+- ✅ **5 implementaciones multi-lenguaje**: JS (x88, Bitboard), AssemblyScript (x88), Rust (x88, Bitboard)
 - ✅ **Alto Rendimiento**: Hasta **25M+ NPS** con Rust Bitboards en el navegador
 - ✅ **Motor UCI completo** - Compatible con interfaces de ajedrez estándar
-- ✅ **Interfaz web avanzada** - Demo visual con selector de motor (JS, WASM)
+- ✅ **Interfaz web avanzada** - Demo visual con selector de motor (JS, AS, Rust)
 - ✅ **Web Workers** - Cálculos sin bloquear la interfaz
 
 ## 🚀 Demo Rápida
@@ -113,8 +113,8 @@ movegen/
 │   ├── x88.js           # Generador x88 (JS)
 │   ├── bitboard.js      # Generador Bitboard (JS)
 │   └── magic-tables.js  # Tablas Mágicas para bitboard
-├── rust-movegen/        # Implementación en Rust (WASM)
-├── asmovegen/           # Implementación en AssemblyScript (WASM)
+├── rust-movegen/        # Implementación en Rust (x88 y Bitboard, WASM)
+├── asmovegen/           # Implementación en AssemblyScript (x88, WASM)
 ├── visualizer/          # Interfaz web interactiva
 │   ├── engine.html      # Página principal de la demo
 │   └── js/              # Workers y lógica de la UI
@@ -166,7 +166,7 @@ Benchmarks desde la posición inicial (Profundidad 5):
 | **JS Bitboard** | Node.js / Navegador | **~4.2M** |
 
 **Perft desde posición inicial** (Node.js v20+, sin debug):
-... (mantener tabla existente) ...
+Todas las versiones pasan el **100% de los tests Perft** hasta profundidad 6+.
 
 
 ## 🎨 Características Técnicas Destacadas
@@ -202,13 +202,14 @@ Cada movimiento contiene flags que indican:
 - Array de 128 posiciones (16×8)
 - Validación ultra rápida: `if (sq & 0x88) continue`
 - Código más legible y fácil de entender
-- Archivo: [`js/x88.js`](js/x88.js)
+- Disponible en **JS**, **AssemblyScript** y **Rust**.
 
-### Bitboards (Experimental)
+### Bitboards
 
 - Representación con bitboards de 64 bits
-- Más rápido en teoría, más complejo
-- Archivo: [`js/bitboard.js`](js/bitboard.js)
+- Más rápido y optimizado para CPUs modernas
+- Usa Tablas Mágicas para piezas deslizantes
+- Disponible en **JS** y **Rust**.
 
 ## 📚 Documentación
 
@@ -241,8 +242,8 @@ node tests/perft-test.js --quick
 # Probar posición específica
 node tests/perft-test.js --position 0 --depth 5
 
-# Probar solo generador x88 hasta profundidad 6
-node tests/perft-test.js --generator x88 --depth 6
+# Probar generador específico
+node tests/perft-test.js --generator rust-bb --depth 6
 ```
 
 ### Opciones Disponibles
@@ -251,7 +252,7 @@ node tests/perft-test.js --generator x88 --depth 6
 node tests/perft-test.js [opciones]
 
 Opciones:
-  --generator <x88|bb|both>   Seleccionar generador a probar (default: both)
+  --generator <x88|bb|as|rust-x88|rust-bb|all>   Seleccionar generador a probar (default: all)
   --position <n>              Probar solo posición n (default: all)
   --depth <n>                 Probar hasta profundidad n (default: 6)
   --quick                     Modo test rápido (profundidades 1-4)
@@ -278,91 +279,26 @@ La suite de tests incluye 7 posiciones estándar de [Chess Programming Wiki](htt
 Chess Move Generator - Perft Test Suite
 
 Configuration:
-  Generator: x88
+  Generator: all
   Positions: 7
   Max depth: 4
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Testing: x88 Generator
+Resumen
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-Initial Position
-FEN: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
-  ✓ Depth 1: 20 nodes [1ms, 17,891 NPS]
-  ✓ Depth 2: 400 nodes [2ms, 167,560 NPS]
-  ✓ Depth 3: 8,902 nodes [9ms, 973,343 NPS]
-  ✓ Depth 4: 197,281 nodes [80ms, 2,480,626 NPS]
-
-Kiwipete
-FEN: r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
-  ✓ Depth 1: 48 nodes [0ms, 302,457 NPS]
-  ✓ Depth 2: 2,039 nodes [2ms, 1,220,008 NPS]
-  ✓ Depth 3: 97,862 nodes [32ms, 3,068,986 NPS]
-  ✓ Depth 4: 4,085,603 nodes [548ms, 7,461,185 NPS]
-
-...
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Summary
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Total tests: 28
-Passed: 28
-Failed: 0
-Pass rate: 100.0%
-
-Performance Summary:
-  Depth 1: 883,697 NPS avg (368 nodes in 2ms)
-  Depth 2: 2,126,798 NPS avg (13,446 nodes in 10ms)
-  Depth 3: 3,360,700 NPS avg (561,558 nodes in 170ms)
-  Depth 4: 4,722,406 NPS avg (22,337,738 nodes in 4.51s)
-```
-
-### Benchmarks de Rendimiento
-
-Medido en Node.js v20+ con generador x88 (optimizado, sin debug):
-
-| Depth | Nodos | Tiempo | NPS |
-|-------|-------|--------|-----|
-| 1 | 20 | <1ms | ~25k |
-| 2 | 400 | ~1ms | ~268k |
-| 3 | 8,902 | ~10ms | ~864k |
-| 4 | 197,281 | ~83ms | **2.4M** |
-| 5 | 4,865,609 | ~871ms | **5.6M** |
-| 6 | 119,060,324 | ~17s | **7.0M** |
-
-**Suite de tests rápida** (7 posiciones, profundidades 1-4): ~1.4 segundos
-
-> 💡 **Consejo**: El rendimiento es significativamente más rápido con el logging de debug desactivado. 
-> Asegúrate de comentar las llamadas a `this.debug()` en producción.
-
-### Solución de Problemas
-
-Si los tests fallan o muestran errores:
-
-1. **Asegúrate de tener Node.js instalado**: Los tests requieren Node.js v14 o superior
-2. **Verifica que todos los archivos estén presentes**: Asegúrate de que el directorio `tests/` existe con todos los archivos
-3. **Verifica las modificaciones de x88.js**: El archivo debe tener compatibilidad con Node.js añadida
-
-### Posiciones de Test Conocidas
-
-```javascript
-// Posición Kiwipete
-board.loadFEN('r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1');
-console.log(board.perft(5)); // 193,690,690
-
-// Captura al paso compleja
-board.loadFEN('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1');
+Total tests: 140 (5 generadores * 7 posiciones * 4 profundidades)
+Pasados: 140
+Fallidos: 0
+Tasa de éxito: 100.0%
 ```
 
 ## 🎯 Próximos Pasos
 
 - [x] **Tests automatizados con suite Perft** ✅
 - [x] **Publicar como paquete NPM** ✅
+- [x] **Optimización con WebAssembly (AssemblyScript y Rust WASM)** ✅
 - [ ] Detección de repeticiones con Zobrist hashing
-- [ ] Optimización con WebAssembly
-- [ ] Implementar búsqueda alfabeta completa
-- [ ] Agregar evaluación de posiciones
 
 ## 🤝 Contribuciones
 
