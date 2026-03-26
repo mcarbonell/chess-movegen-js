@@ -4,7 +4,7 @@
  * Perft Test Runner for Chess Move Generators
  * 
  * Usage:
- *   node tests/perft-test.js                    # Run all tests on both generators
+ *   node tests/perft-test.js                    # Run all tests on all generators
  *   node tests/perft-test.js --generator x88    # Test only x88
  *   node tests/perft-test.js --generator bb     # Test only bitboard
  *   node tests/perft-test.js --position 0       # Test only position 0
@@ -50,7 +50,7 @@ Usage:
   node tests/perft-test.js [options]
 
 Options:
-  --generator <x88|bb|as|rust-x88|rust-bb|all>   Select generator to test (default: all)
+  --generator <chessjs|x88|bb|as|rust-x88|rust-bb|all>   Select generator to test (default: all)
   --position <n>              Test only position n (default: all)
   --depth <n>                 Test up to depth n (default: 6)
   --quick                     Quick test mode (depths 1-4)

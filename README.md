@@ -374,32 +374,3 @@ This project is under the MIT License - see the LICENSE file for details.
 
 ⭐ If you find this project useful, consider giving it a star on GitHub!
 
-
-## 🤝 Contributing
-
-Contributions are welcome. Please:
-
-1. Fork the project
-2. Create a branch for your feature (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📖 Resources and References
-
-- [Chess Programming Wiki](https://www.chessprogramming.org/)
-- [0x88 Board Representation](https://www.chessprogramming.org/0x88)
-- [Perft Results](https://www.chessprogramming.org/Perft_Results)
-- [UCI Protocol](https://www.chessprogramming.org/UCI)
-
-## 📝 License
-
-This project is under the MIT License - see the LICENSE file for details.
-
-## 👤 Author
-
-**Mario Raúl Carbonell Martínez**
-
----
-
-⭐ If you find this project useful, consider giving it a star on GitHub!
