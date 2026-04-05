@@ -15,17 +15,17 @@ css/
 img/
 
 # Exclude bitboard implementation (too large, experimental)
-js/bitboard.js
-js/magic-tables.js
+# (Included in package for performance)
 js/engine.js
 js/chess.js
 js/chessboard*.js
 js/jquery*.js
 js/bootstrap*.js
 
-# Only include:
-# - js/x88.js (main implementation)
-# - js/module.js (helper functions)
+# Main files included in package:
+# - js/x88.js, js/x88.d.ts
+# - js/chessjs-adapter.js
+# - js/bitboard.js, js/magic-tables.js
 # - README.md, README.es.md
 # - LICENSE
 # - package.json
